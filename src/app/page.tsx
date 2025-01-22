@@ -1,101 +1,169 @@
-import Image from "next/image";
+"use client"
+
+import { motion } from "framer-motion"
+import Image from "next/image"
+import Link from "next/link"
+import StaffCards from "@/components/StaffCards"
+import LeadershipCards from "@/components/LeadershipCards"
+
+const fadeIn = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.8,
+      ease: "easeOut",
+    },
+  },
+}
 
 export default function Home() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <main className="min-h-screen bg-gray-50">
+      {/* Hero Section */}
+      <motion.section
+        className="relative h-[60vh] bg-blue-900 overflow-hidden"
+        initial="hidden"
+        animate="visible"
+        variants={fadeIn}
+      >
+      <Image
+        src="/CypressRanchOrchestraInstagramPhotos/Disney2023.jpg"
+        // src="/orchestra-hero.jpg" TODO change photo
+        alt="Cypress Ranch Orchestra performing"
+        fill={true}
+        className="opacity-50 object-cover"
+      />
+        <div className="absolute inset-0 flex flex-col justify-center items-center text-white">
+          <motion.h1 className="text-4xl md:text-6xl font-bold mb-4 text-center" variants={fadeIn}>
+            Cypress Ranch Orchestra
+          </motion.h1>
+          <motion.p className="text-xl md:text-2xl mb-8 text-center" variants={fadeIn}>
+            Inspiring musical excellence since 2008
+          </motion.p>
+          <motion.div variants={fadeIn}>
+            <Link
+              href="/concerts"
+              className="bg-amber-500 text-blue-900 px-6 py-3 rounded-md font-semibold hover:bg-amber-400 transition-colors duration-300"
+            >
+              Upcoming Concerts
+            </Link>
+          </motion.div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+      </motion.section>
+
+      {/* About Section */}
+      <motion.section
+        className="py-16 px-4 max-w-4xl mx-auto"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-100px" }}
+        variants={fadeIn}
+      >
+        <h2 className="text-3xl font-semibold text-gray-800 mb-6 text-center">About Our Orchestra</h2>
+        <p className="text-gray-600 mb-8 text-center">
+          The Cypress Ranch High School Orchestra program is dedicated to fostering musical growth, creativity, and
+          excellence in our students. Through rigorous training and passionate performances, we aim to enrich our
+          community and inspire the next generation of musicians.
+        </p>
+        <div className="grid md:grid-cols-3 gap-8">
+          <div className="text-center">
+            <div className="text-4xl font-bold text-amber-500 mb-2">100+</div>
+            <div className="text-gray-700">Students</div>
+          </div>
+          <div className="text-center">
+            <div className="text-4xl font-bold text-amber-500 mb-2">20+</div>
+            <div className="text-gray-700">Annual Performances</div>
+          </div>
+          <div className="text-center">
+            <div className="text-4xl font-bold text-amber-500 mb-2">17</div>
+            <div className="text-gray-700">Years of Excellence</div>
+          </div>
+        </div>
+      </motion.section>
+
+      {/* Featured Events */}
+      <motion.section
+        className="bg-white py-16 px-4"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-100px" }}
+        variants={fadeIn}
+      >
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl font-semibold text-gray-800 mb-8 text-center">Featured Events</h2>
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="bg-gray-50 p-6 rounded-lg shadow-md">
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">Spring Concert</h3>
+              <p className="text-gray-600 mb-4">
+                Join us for an evening of classical masterpieces and contemporary works.
+              </p>
+              <Link
+                href="/concerts"
+                className="text-amber-500 font-semibold hover:text-amber-600 transition-colors duration-300"
+              >
+                Learn More →
+              </Link>
+            </div>
+            <div className="bg-gray-50 p-6 rounded-lg shadow-md">
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">UIL Competition</h3>
+              <p className="text-gray-600 mb-4">Support our orchestra as we compete in the annual UIL competition.</p>
+              <Link
+                href="/competitions"
+                className="text-amber-500 font-semibold hover:text-amber-600 transition-colors duration-300"
+              >
+                Learn More →
+              </Link>
+            </div>
+          </div>
+        </div>
+      </motion.section>
+
+      {/* Staff & Leadership Section */}
+      <motion.section
+        className="py-16 px-4 bg-gray-50"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-100px" }}
+        variants={fadeIn}
+      >
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl font-semibold text-gray-800 mb-8 text-center">Meet Our Staff & Leadership</h2>
+          <p className="text-gray-600 mb-12 text-center">
+            Our dedicated staff work tirelessly to coordinate, manage, and bring to life every aspect of our orchestra.
+            They are supported by our leadership team, who assist in non-administrative day-to-day tasks. This
+            collaborative effort ensures the orchestra&apos;s success and enriches our community through music.
+          </p>
+          <StaffCards />
+          <div className="my-12 border-t border-gray-200"></div>
+          <LeadershipCards />
+        </div>
+      </motion.section>
+
+      {/* Call to Action */}
+      <motion.section
+        className="bg-blue-950 text-white py-16 px-4"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-100px" }}
+        variants={fadeIn}
+      >
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl font-semibold mb-4">Join Our Orchestra Family</h2>
+          <p className="mb-8">
+            Whether you&apos;re a student looking to join or a community member wanting to support, we&apos;d love to have you as
+            part of our musical journey.
+          </p>
+          <Link
+            href="/resources"
+            className="bg-amber-500 text-blue-900 px-6 py-3 rounded-md font-semibold hover:bg-amber-400 transition-colors duration-300 inline-block"
+          >
+            Get Involved
+          </Link>
+        </div>
+      </motion.section>
+    </main>
+  )
 }
+
