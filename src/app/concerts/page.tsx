@@ -1,8 +1,6 @@
-// TODO fix formatting
 "use client"
-
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Orchestra {
   name: string;
@@ -39,11 +37,24 @@ const concertOrder: Orchestra[] = [
   },
 ];
 
+const pageVariants = {
+  initial: { opacity: 0, x: -50 },
+  in: { opacity: 1, x: 0 },
+  out: { opacity: 0, x: 50 }
+};
+
+const pageTransition = {
+  type: "tween",
+  ease: "anticipate",
+  duration: 0.5
+};
+
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
+      delayChildren: 0.3,
       staggerChildren: 0.2
     }
   }
@@ -55,35 +66,33 @@ const itemVariants = {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.5
+      duration: 0.5,
+      ease: "easeOut"
     }
   }
 };
 
 const ConcertOrder: React.FC<ConcertOrderProps> = ({ concertName }) => {
   return (
-    <motion.div  
+    <motion.div
       className="grid gap-5 px-5 py-5 lg:gap-16"
       initial="hidden"
-      whileInView="visible"
-      viewport={{ once: false, margin: "-100px" }}
+      animate="visible"
       variants={containerVariants}
     >
       <div className="flex flex-col justify-center">
-        <motion.h1 
+        <motion.h1
           className="mb-4 text-4xl font-extrabold leading-none tracking-tight text-gray-900 dark:text-white md:text-5xl lg:text-5xl xl:text-6xl"
           variants={itemVariants}
         >
           {concertName} Concert Order
         </motion.h1>
-        
-        <motion.p 
+        <motion.p
           className="mb-8 text-lg font-normal text-gray-500 dark:text-gray-400 lg:text-xl"
           variants={itemVariants}
         >
           This was our last concert order, next concert coming soon!
         </motion.p>
-        
         <div className="xxl:grid-cols-3 grid grid-cols-1 gap-8 md:grid-cols-1 lg:grid-cols-2">
           {concertOrder.map((concert, index) => (
             <motion.div
@@ -109,14 +118,20 @@ const ConcertOrder: React.FC<ConcertOrderProps> = ({ concertName }) => {
 
 export default function Concert() {
   return (
-    <>
-      <main className="m-5">
+    <AnimatePresence mode="wait">
+      <motion.main
+        className="m-5"
+        initial="initial"
+        animate="in"
+        exit="out"
+        variants={pageVariants}
+        transition={pageTransition}
+      >
         <div className="grid justify-items-center xl:flex xl:items-center xl:justify-evenly">
-          <motion.div 
+          <motion.div
             className="h-fit w-fit rounded-lg border border-gray-200 bg-white shadow sm:p-5"
             initial={{ opacity: 0, x: -50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
+            animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
           >
             <Image
@@ -129,7 +144,7 @@ export default function Concert() {
           </motion.div>
           <ConcertOrder concertName="Fall" />
         </div>
-      </main>
-    </>
+      </motion.main>
+    </AnimatePresence>
   );
 }

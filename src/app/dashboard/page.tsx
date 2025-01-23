@@ -76,7 +76,7 @@ export default function Home() {
             <div className="text-gray-700">Annual Performances</div>
           </div>
           <div className="text-center">
-            <div className="text-4xl font-bold text-amber-500 mb-2">17</div>
+            <div className="text-4xl font-bold text-amber-500 mb-2">15</div>
             <div className="text-gray-700">Years of Excellence</div>
           </div>
         </div>
@@ -180,7 +180,7 @@ export default function Home() {
             href="/resources"
             className="bg-amber-500 text-blue-900 px-6 py-3 rounded-md font-semibold hover:bg-amber-400 transition-colors duration-300 inline-block"
           >
-            Access Resources
+            Get Involved
           </Link>
         </div>
       </motion.section>
