@@ -28,13 +28,13 @@ export default function Home() {
         animate="visible"
         variants={fadeIn}
       >
-      <Image
+        <Image
         src="/CypressRanchOrchestraInstagramPhotos/Disney2023.jpg"
-        // src="/orchestra-hero.jpg" TODO change photo
         alt="Cypress Ranch Orchestra performing"
-        fill={true}
-        className="opacity-50 object-cover"
-      />
+          layout="fill"
+          objectFit="cover"
+          className="opacity-50"
+        />
         <div className="absolute inset-0 flex flex-col justify-center items-center text-white">
           <motion.h1 className="text-4xl md:text-6xl font-bold mb-4 text-center" variants={fadeIn}>
             Cypress Ranch Orchestra
@@ -77,7 +77,7 @@ export default function Home() {
             <div className="text-gray-700">Annual Performances</div>
           </div>
           <div className="text-center">
-            <div className="text-4xl font-bold text-amber-500 mb-2">17</div>
+            <div className="text-4xl font-bold text-amber-500 mb-2">15</div>
             <div className="text-gray-700">Years of Excellence</div>
           </div>
         </div>
@@ -93,27 +93,39 @@ export default function Home() {
       >
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl font-semibold text-gray-800 mb-8 text-center">Featured Events</h2>
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-gray-50 p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">Spring Concert</h3>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">Concerts</h3>
               <p className="text-gray-600 mb-4">
-                Join us for an evening of classical masterpieces and contemporary works.
+                Join us for evenings of classical masterpieces and contemporary works.
               </p>
               <Link
                 href="/concerts"
                 className="text-amber-500 font-semibold hover:text-amber-600 transition-colors duration-300"
               >
-                Learn More →
+                View Concert Schedule →
               </Link>
             </div>
             <div className="bg-gray-50 p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">UIL Competition</h3>
-              <p className="text-gray-600 mb-4">Support our orchestra as we compete in the annual UIL competition.</p>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">Competitions</h3>
+              <p className="text-gray-600 mb-4">
+                Explore our orchestra&apos;s participation in various prestigious competitions.
+              </p>
               <Link
                 href="/competitions"
                 className="text-amber-500 font-semibold hover:text-amber-600 transition-colors duration-300"
               >
-                Learn More →
+                View Competitions →
+              </Link>
+            </div>
+            <div className="bg-gray-50 p-6 rounded-lg shadow-md">
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">Trips & Socials</h3>
+              <p className="text-gray-600 mb-4">Discover our adventures and memorable moments beyond the stage.</p>
+              <Link
+                href="/trips-and-socials"
+                className="text-amber-500 font-semibold hover:text-amber-600 transition-colors duration-300"
+              >
+                Explore Our Journeys →
               </Link>
             </div>
           </div>
@@ -128,22 +140,22 @@ export default function Home() {
         viewport={{ once: true, margin: "-100px" }}
         variants={fadeIn}
       >
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl font-semibold text-gray-800 mb-8 text-center">Meet Our Staff & Leadership</h2>
-          <p className="text-gray-600 mb-12 text-center">
+          <p className="text-gray-600 mb-12 text-center max-w-3xl mx-auto">
             Our dedicated staff work tirelessly to coordinate, manage, and bring to life every aspect of our orchestra.
             They are supported by our leadership team, who assist in non-administrative day-to-day tasks. This
             collaborative effort ensures the orchestra&apos;s success and enriches our community through music.
           </p>
           <StaffCards />
-          <div className="my-12 border-t border-gray-200"></div>
+          <div className="my-16 border-t border-gray-200"></div>
           <LeadershipCards />
         </div>
       </motion.section>
 
       {/* Call to Action */}
       <motion.section
-        className="bg-blue-950 text-white py-16 px-4"
+        className="bg-blue-900 text-white py-16 px-4"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, margin: "-100px" }}
