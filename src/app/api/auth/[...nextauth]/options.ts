@@ -1,19 +1,8 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@/utils/supabase/server";
 
-// Initialize Supabase client
-if (
-  !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-) {
-  throw new Error("Supabase environment variables are not set!");
-}
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = createClient();
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -34,9 +23,11 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
+          console.error("Missing credentials");
           throw new Error("Email and password are required.");
         }
         try {
+          // Step 1: Authenticate with Supabase
           const { data: authData, error: authError } =
             await supabase.auth.signInWithPassword({
               email: credentials.email,
@@ -44,26 +35,39 @@ export const authOptions: NextAuthOptions = {
             });
 
           if (authError || !authData.session || !authData.user) {
-            console.error("Supabase authentication error:", authError);
+            console.error("Supabase auth failed:", authError?.message);
             return null;
           }
 
-          const { data: userData, error: userError } = await supabase
-            .from("users")
-            .select("id, role, full_name")
+          console.log("Auth successful for:", credentials.email);
+
+          // Step 2: Get user profile data from 'profiles' table
+          const { data: profileData, error: profileError } = await supabase
+            .from("profiles")
+            .select('*')
             .eq("auth_id", authData.user.id)
             .single();
 
-          if (userError || !userData) {
-            console.error("Error fetching user data:", userError);
+          if (profileError || !profileData) {
+            console.error("Profile fetch failed:", profileError?.message);
             return null;
           }
 
+          console.log("User role:", profileData.role);
+
+          // Accept both admin and student roles - don't filter here
+          // We'll handle access control at the route level instead
+          if (!["admin", "student"].includes(profileData.role)) {
+            console.error("Invalid role:", profileData.role);
+            return null;
+          }
+
+          // Return user data including role - IMPORTANT: don't exclude students
           return {
-            id: authData.user.id,
+            id: profileData.id.toString(),
             email: authData.user.email,
-            name: userData.full_name || authData.user.email,
-            role: userData.role || "user",
+            name: profileData.full_name || authData.user.email,
+            role: profileData.role, // Keep the role as is
             accessToken: authData.session.access_token,
             refreshToken: authData.session.refresh_token,
           };
@@ -75,9 +79,8 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   pages: {
-    signIn: "/auth/signin",
-    error: "/auth/error",
-    signOut: "/auth/signout",
+    signIn: "/admin",
+    error: "/admin",
   },
   session: {
     strategy: "jwt",
@@ -90,21 +93,6 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role;
         token.accessToken = user.accessToken;
         token.refreshToken = user.refreshToken;
-      }
-
-      if (token.accessToken) {
-        try {
-          const { data, error } = await supabase.auth.refreshSession({
-            refresh_token: token.refreshToken,
-          });
-
-          if (!error && data?.session) {
-            token.accessToken = data.session.access_token;
-            token.refreshToken = data.session.refresh_token;
-          }
-        } catch (error) {
-          console.error("Error during token refresh:", error);
-        }
       }
 
       return token;
