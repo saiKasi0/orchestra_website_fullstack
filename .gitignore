@@ -43,3 +43,5 @@ next-env.d.ts
 # Utils
 /scripts
 /dist
+supabase/seed.sql
+supabase/migrations/20250313220123_my_schema.sql
