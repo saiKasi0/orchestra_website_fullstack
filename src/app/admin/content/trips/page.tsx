@@ -222,7 +222,7 @@ export default function TripsContentManagement() {
         <CardHeader>
           <CardTitle>Trips & Socials Content Management</CardTitle>
           <CardDescription>
-            Update the content of the Trips & Socials page. Changes will be reflected on the live site.
+            Update the content of the Trips & Socials page. Changes will be reflected on the live site. This website is intended to be used on a desktop device. 
           </CardDescription>
         </CardHeader>
       </Card>

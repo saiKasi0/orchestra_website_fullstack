@@ -255,7 +255,7 @@ export default function HomepageContentManagement() {
         <CardHeader>
           <CardTitle>Homepage Content Management</CardTitle>
           <CardDescription>
-            Update the content of your website&apos;s homepage. The changes will be reflected on the live site.
+            Update the content of your website&apos;s homepage. The changes will be reflected on the live site. This website is intended to be used on a desktop device. 
           </CardDescription>
         </CardHeader>
       </Card>

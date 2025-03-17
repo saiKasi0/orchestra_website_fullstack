@@ -108,7 +108,7 @@ export default function ContentManagement() {
         <div className="my-8 text-center">
           <h2 className="text-3xl font-bold tracking-tight">Content Management</h2>
           <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">
-            Select a section below to manage content across your website. Each section contains specific tools to update and publish new content.
+            Select a section below to manage content across your website. Each section contains specific tools to update and publish new content. This website is intended to be used on a desktop device. 
           </p>
         </div>
 

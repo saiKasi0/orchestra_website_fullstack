@@ -280,7 +280,7 @@ export default function CompetitionContentManagement() {
         <CardHeader>
             <CardTitle>Competition Management</CardTitle>
             <CardDescription>
-            Update the content of your website&apos;s competitions page. The changes will be reflected on the live site.            </CardDescription>
+            Update the content of your website&apos;s competitions page. The changes will be reflected on the live site. This website is intended to be used on a desktop device. </CardDescription>
         </CardHeader>
         </Card>
 

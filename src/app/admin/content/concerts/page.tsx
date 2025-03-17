@@ -134,7 +134,7 @@ export default function ConcertContentManagement() {
         <CardHeader>
         <CardTitle>Concert Content Management</CardTitle>
         <CardDescription>
-            Update the content of your website&apos;s concert page. The changes will be reflected on the live site.
+            Update the content of your website&apos;s concert page. The changes will be reflected on the live site. This website is intended to be used on a desktop device. 
         </CardDescription>
         </CardHeader>
     </Card>
