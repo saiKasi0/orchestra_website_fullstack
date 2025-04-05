@@ -19,7 +19,7 @@ export async function middleware(req: NextRequest) {
     }
 
     // Check for admin role
-    if (!["admin", "student"].includes(session.role)) {
+    if (!["admin", "leadership"].includes(session.role)) {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
   }

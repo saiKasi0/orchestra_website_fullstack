@@ -13,13 +13,13 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { AdminPageLayout } from "@/components/admin/AdminPageLayout";
 
-export default function AdminDashboard() {
+export default function AdminDashboardPage() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "admin";
   const userName = session?.user?.name || "User";
   
   return (
-    <AdminPageLayout allowedRoles={["admin", "student"]} title="Admin Dashboard">
+    <AdminPageLayout allowedRoles={["admin", "super_admin"]} title="Admin Dashboard">
       {/* Welcome Card - Spans full width */}
       <Card className="mb-6">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -41,7 +41,7 @@ export default function AdminDashboard() {
         </CardContent>
       </Card>
       
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Users Card - Only visible to admins */}
         {isAdmin && (
           <Card className="border-l-4 border-l-indigo-600">

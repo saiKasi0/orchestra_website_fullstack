@@ -2,12 +2,17 @@
 
 import { motion } from "framer-motion"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { StaffMember } from "@/types/homepage"
 
 interface StaffCardProps {
   id: string
   name: string
   imageUrl: string
   description: React.ReactNode
+}
+
+interface StaffCardsProps {
+  data?: StaffMember[]
 }
 
 const StaffCard: React.FC<StaffCardProps> = ({ id, name, imageUrl, description }) => {
@@ -33,58 +38,28 @@ const StaffCard: React.FC<StaffCardProps> = ({ id, name, imageUrl, description }
   )
 }
 
-const StaffCards: React.FC = () => {
-  const staffMembers = [
-    {
-      id: "Mrs. Ledford Card",
-      name: "Mrs. Elizabeth Ledford",
-      imageUrl: "/OrchestraLeadershipAndStaffImages/MsLedford.jpg",
-      description: (
-        <>
-          <h6 className="font-semibold mb-1">Education:</h6>
-          <ul className="list-disc pl-5 mb-2">
-            <li>MM, Violin Performance, Florida State University</li>
-            <li>BA, Music and BA, English, Trinity University</li>
-          </ul>
-          <p className="mb-2">This is my 21st year directing public school orchestras in Texas.</p>
-          <p className="mb-2">
-            <span className="font-semibold">My Family:</span> Husband Tanner, Son Thomas, Daughter Grace, and Lea the
-            Dog
-          </p>
-          <p className="mb-2">
-            <span className="font-semibold">Hobbies:</span> Cross Stitch, Cooking
-          </p>
-          <h6 className="font-semibold mb-1">What I Am Most Excited About This Year:</h6>
-          <p>Connections with students, performances in front of live audiences</p>
-        </>
-      ),
-    },
-    {
-      id: "Ms. Sung Card",
-      name: "Ms. Camila Sung",
-      imageUrl: "/OrchestraLeadershipAndStaffImages/MsSung.jpg",
-      description: (
-        <>
-          <h6 className="font-semibold mb-1">Education:</h6>
-          <ul className="list-disc pl-5 mb-2">
-            <li>University of Houston: Bachelor & Master Degree in Performance & Pedagogy</li>
-            <li>Sam Houston State University: 2nd Undergraduate degree in Music Education</li>
-          </ul>
-          <p className="mb-2">
-            <span className="font-semibold">Instrument:</span> Violin
-          </p>
-          <p className="mb-2">
-            <span className="font-semibold">My Family:</span> Mom, Dad, and Myself
-          </p>
-          <p className="mb-2">
-            <span className="font-semibold">Hobbies:</span> Watch movies
-          </p>
-          <h6 className="font-semibold mb-1">What I Am Most Excited About This Year:</h6>
-          <p>This is my 5th year of teaching and at Cypress Ranch and looking forward to having a great year!</p>
-        </>
-      ),
-    },
-  ]
+const StaffCards: React.FC<StaffCardsProps> = ({ data }) => {
+  // If no data is provided, don't render anything
+  if (!data || data.length === 0) {
+    return null;
+  }
+
+  // Map staff members data to format expected by StaffCard
+  const staffMembers = data.map(staff => ({
+    id: staff.id,
+    name: staff.name,
+    imageUrl: staff.image_url,
+    description: (
+      <>
+        {staff.position && (
+          <p className="mb-2 text-lg font-semibold">{staff.position}</p>
+        )}
+        {staff.bio && (
+          <p className="mb-2">{staff.bio}</p>
+        )}
+      </>
+    )
+  }));
 
   return (
     <motion.div

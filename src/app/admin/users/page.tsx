@@ -50,7 +50,7 @@ type User = {
   created_at: string;
 };
 
-export default function UsersManagement() {
+export default function UsersPage() {
   const { data: session } = useSession();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,7 +61,7 @@ export default function UsersManagement() {
   // New user form state
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserFullName, setNewUserFullName] = useState("");
-  const [newUserRole, setNewUserRole] = useState("student");
+  const [newUserRole, setNewUserRole] = useState("leadership");
   const [newUserPassword, setNewUserPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [passwordError, setPasswordError] = useState("");
@@ -207,7 +207,7 @@ export default function UsersManagement() {
   const resetNewUserForm = () => {
     setNewUserEmail("");
     setNewUserFullName("");
-    setNewUserRole("student");
+    setNewUserRole("leadership");
     setNewUserPassword("");
   };
 
@@ -217,221 +217,223 @@ export default function UsersManagement() {
   };
 
   return (
-    <AdminPageLayout allowedRoles={["admin"]} title="User Management">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-xl">
+    <AdminPageLayout allowedRoles={["admin", "super_admin"]} title="User Management">
+      <div className="space-y-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-xl">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-indigo-600" />
+                Users
+              </div>
+            </CardTitle>
             <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-indigo-600" />
-              Users
-            </div>
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={fetchUsers}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
-            <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Add User
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <form onSubmit={createUser}>
-                  <DialogHeader>
-                    <DialogTitle>Add New User</DialogTitle>
-                    <DialogDescription>
-                      Create a new user account. All fields including password are required.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="email" className="text-right">
-                        Email
-                      </Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={newUserEmail}
-                        onChange={(e) => setNewUserEmail(e.target.value)}
-                        className="col-span-3"
-                        required
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="fullName" className="text-right">
-                        Full Name
-                      </Label>
-                      <Input
-                        id="fullName"
-                        value={newUserFullName}
-                        onChange={(e) => setNewUserFullName(e.target.value)}
-                        className="col-span-3"
-                        required
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="role" className="text-right">
-                        Role
-                      </Label>
-                      <Select
-                        value={newUserRole}
-                        onValueChange={setNewUserRole}
-                      >
-                        <SelectTrigger className="col-span-3">
-                          <SelectValue placeholder="Select a role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="student">Student</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="password" className="text-right">
-                        Password
-                      </Label>
-                      <div className="col-span-3 space-y-2">
+              <Button variant="outline" onClick={fetchUsers}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+              <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Add User
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <form onSubmit={createUser}>
+                    <DialogHeader>
+                      <DialogTitle>Add New User</DialogTitle>
+                      <DialogDescription>
+                        Create a new user account. All fields including password are required.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="email" className="text-right">
+                          Email
+                        </Label>
                         <Input
-                          id="password"
-                          type="password"
-                          value={newUserPassword}
-                          onChange={(e) => {
-                            setNewUserPassword(e.target.value);
-                            validatePassword(e.target.value);
-                          }}
+                          id="email"
+                          type="email"
+                          value={newUserEmail}
+                          onChange={(e) => setNewUserEmail(e.target.value)}
+                          className="col-span-3"
                           required
-                          className={cn(
-                            passwordError && "border-red-500 focus-visible:ring-red-500"
-                          )}
                         />
-                        
-                        {passwordStrength > 0 && (
-                          <div className="w-full bg-gray-200 rounded-full h-1.5">
-                            <div 
-                              className={cn(
-                                "h-1.5 rounded-full transition-all duration-300",
-                                passwordStrength === 1 && "w-1/5 bg-red-500",
-                                passwordStrength === 2 && "w-2/5 bg-red-500",
-                                passwordStrength === 3 && "w-3/5 bg-yellow-500",
-                                passwordStrength === 4 && "w-4/5 bg-yellow-500",
-                                passwordStrength === 5 && "w-full bg-green-500"
-                              )}
-                            />
-                          </div>
-                        )}
-                        
-                        {passwordError && (
-                          <p className="text-xs text-red-500">{passwordError}</p>
-                        )}
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="fullName" className="text-right">
+                          Full Name
+                        </Label>
+                        <Input
+                          id="fullName"
+                          value={newUserFullName}
+                          onChange={(e) => setNewUserFullName(e.target.value)}
+                          className="col-span-3"
+                          required
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="role" className="text-right">
+                          Role
+                        </Label>
+                        <Select
+                          value={newUserRole}
+                          onValueChange={setNewUserRole}
+                        >
+                          <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Select a role" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="admin">Administrator</SelectItem>
+                            <SelectItem value="leadership">Leadership</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="password" className="text-right">
+                          Password
+                        </Label>
+                        <div className="col-span-3 space-y-2">
+                          <Input
+                            id="password"
+                            type="password"
+                            value={newUserPassword}
+                            onChange={(e) => {
+                              setNewUserPassword(e.target.value);
+                              validatePassword(e.target.value);
+                            }}
+                            required
+                            className={cn(
+                              passwordError && "border-red-500 focus-visible:ring-red-500"
+                            )}
+                          />
+                          
+                          {passwordStrength > 0 && (
+                            <div className="w-full bg-gray-200 rounded-full h-1.5">
+                              <div 
+                                className={cn(
+                                  "h-1.5 rounded-full transition-all duration-300",
+                                  passwordStrength === 1 && "w-1/5 bg-red-500",
+                                  passwordStrength === 2 && "w-2/5 bg-red-500",
+                                  passwordStrength === 3 && "w-3/5 bg-yellow-500",
+                                  passwordStrength === 4 && "w-4/5 bg-yellow-500",
+                                  passwordStrength === 5 && "w-full bg-green-500"
+                                )}
+                              />
+                            </div>
+                          )}
+                          
+                          {passwordError && (
+                            <p className="text-xs text-red-500">{passwordError}</p>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => setAddDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Create User
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
+                    <DialogFooter>
+                      <Button type="button" variant="outline" onClick={() => setAddDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Create User
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-6">
-                    Loading users...
-                  </TableCell>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ) : users.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                    No users found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.full_name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={user.role === "admin" ? "destructive" : "secondary"}>
-                          {user.role === "admin" ? "Admin" : "Student"}
-                        </Badge>
-                        {/* Only show role changer if not the current user */}
-                        {user.email !== session?.user?.email && (
-                          <Select
-                            defaultValue={user.role}
-                            onValueChange={(newRole) => updateUserRole(user.id, newRole)}
-                          >
-                            <SelectTrigger className="w-28 h-7">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="admin">Admin</SelectItem>
-                              <SelectItem value="student">Student</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(user.created_at).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {/* Prevent self-deletion */}
-                      {user.email !== session?.user?.email && (
-                        <Button variant="ghost" size="icon" onClick={() => confirmDelete(user)}>
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      )}
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-6">
+                      Loading users...
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                ) : users.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                      No users found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  users.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.full_name}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={user.role === "admin" ? "destructive" : "secondary"}>
+                            {user.role === "admin" ? "Admin" : "Leadership"}
+                          </Badge>
+                          {/* Only show role changer if not the current user */}
+                          {user.email !== session?.user?.email && (
+                            <Select
+                              defaultValue={user.role}
+                              onValueChange={(newRole) => updateUserRole(user.id, newRole)}
+                            >
+                              <SelectTrigger className="w-28 h-7">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="admin">Administrator</SelectItem>
+                                <SelectItem value="leadership">Leadership</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(user.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {/* Prevent self-deletion */}
+                        {user.email !== session?.user?.email && (
+                          <Button variant="ghost" size="icon" onClick={() => confirmDelete(user)}>
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
 
-      {/* Delete confirmation dialog */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Deletion</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete {selectedUser?.full_name}? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={deleteUser}>
-              Delete User
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        {/* Delete confirmation dialog */}
+        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirm Deletion</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete {selectedUser?.full_name}? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={deleteUser}>
+                Delete User
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </AdminPageLayout>
   );
 }

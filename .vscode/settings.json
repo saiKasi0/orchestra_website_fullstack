@@ -3,8 +3,23 @@
     "editor.defaultFormatter": "denoland.vscode-deno"
   },
   "cSpell.words": [
+    "aiden",
+    "Akshara",
+    "Camila",
+    "Ekam",
+    "Jaylene",
+    "Ledford",
     "NEXTAUTH",
-    "supabase"
+    "PGRST",
+    "samy",
+    "sonner",
+    "supabase",
+    "Tanav",
+    "timestamptz",
+    "Tuvana",
+    "uuidv",
+    "varun",
+    "yuyan"
   ],
   "deno.enablePaths": [
     "supabase/functions"

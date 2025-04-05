@@ -8,7 +8,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 const createUserSchema = z.object({
   email: z.string().email("Invalid email format"),
   fullName: z.string().min(1, "Full name is required"),
-  role: z.enum(["admin", "student"]),
+  role: z.enum(["admin", "leadership"]),
   password: z.string()
     .min(10, "Password must be at least 10 characters")
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")

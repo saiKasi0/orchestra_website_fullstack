@@ -6,7 +6,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 
 // Schema validation for PATCH request
 const updateUserSchema = z.object({
-  role: z.enum(["admin", "student"]),
+  role: z.enum(["admin", "leadership"]),
 });
 
 // Update a user (role only for security)

@@ -5,8 +5,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOut } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { toast } from "sonner";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import React from "react";
 
 type AdminPageLayoutProps = {
   children: React.ReactNode;
@@ -21,6 +30,7 @@ export function AdminPageLayout({
 }: AdminPageLayoutProps) {
   const { isAuthorized, isLoading, session } = useAdminAuth({ allowedRoles });
   const router = useRouter();
+  const pathname = usePathname();
 
   // Handle sign out
   const handleSignOut = async () => {
@@ -33,6 +43,43 @@ export function AdminPageLayout({
       toast?.error("Failed to sign out");
     }
   };
+
+  // Generate breadcrumb items based on the current path
+  const generateBreadcrumbs = () => {
+    if (!pathname) return [];
+    
+    // Skip the breadcrumbs on the dashboard or login page
+    if (pathname === "/admin/dashboard" || pathname === "/admin") {
+      return [];
+    }
+
+    const segments = pathname.split("/").filter(Boolean);
+    
+    // Map path segments to readable names
+    const pathMap: { [key: string]: string } = {
+      admin: "Admin",
+      dashboard: "Dashboard",
+      users: "Users",
+      content: "Content",
+      settings: "Settings",
+      homepage: "Homepage",
+      resources: "Resources",
+      calendar: "Calendar",
+      // Add other path segments as needed
+    };
+    
+    // Build breadcrumbs with correct paths
+    return segments.slice(1).map((segment, index) => {
+      // Build the path by joining segments up to current index
+      // For example: /admin/content, /admin/content/homepage
+      const path = `/admin/${segments.slice(1, index + 2).join("/")}`;
+      const label = pathMap[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);
+      
+      return { path, label };
+    });
+  };
+  
+  const breadcrumbs = generateBreadcrumbs();
 
   if (isLoading) {
     return (
@@ -81,8 +128,41 @@ export function AdminPageLayout({
         </div>
       </div>
       
+      {/* Add breadcrumb navigation */}
+      {breadcrumbs.length > 0 && (
+        <div className="bg-white border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <Breadcrumb>
+              <BreadcrumbList className="text-sm">
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="/admin/dashboard">Dashboard</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="text-gray-400" />
+                
+                {breadcrumbs.map((crumb, index) => (
+                  <React.Fragment key={crumb.path}>
+                    {index === breadcrumbs.length - 1 ? (
+                      <BreadcrumbItem>
+                        <BreadcrumbPage className="font-medium">{crumb.label}</BreadcrumbPage>
+                      </BreadcrumbItem>
+                    ) : (
+                      <>
+                        <BreadcrumbItem>
+                          <BreadcrumbLink href={crumb.path} className="text-gray-600 hover:text-indigo-600">{crumb.label}</BreadcrumbLink>
+                        </BreadcrumbItem>
+                        <BreadcrumbSeparator className="text-gray-400" />
+                      </>
+                    )}
+                  </React.Fragment>
+                ))}
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+        </div>
+      )}
+      
       {/* Main content */}
-      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 mt-5">
+      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {children}
       </div>
     </div>

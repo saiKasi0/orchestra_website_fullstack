@@ -46,7 +46,7 @@ const handler = NextAuth({
           }
 
           // Check if user is an admin
-          if (!["admin", "student"].includes(profileData.role)) {
+          if (!["admin", "leadership"].includes(profileData.role)) {
             console.error("Invalid role:", profileData.role);
             return null;
         }

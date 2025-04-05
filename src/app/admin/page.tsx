@@ -34,7 +34,7 @@ export default function AdminLogin() {
         const userData = await userResponse.json();
         
         // Redirect based on user role
-        if (userData.user?.role === "admin" || userData.user?.role === "student") {
+        if (userData.user?.role === "admin" || userData.user?.role === "leadership") {
           router.push("/admin/dashboard");
         } else {
           // Default fallback for other roles

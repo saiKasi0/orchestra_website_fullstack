@@ -57,7 +57,7 @@ export const authOptions: NextAuthOptions = {
 
           // Accept both admin and student roles - don't filter here
           // We'll handle access control at the route level instead
-          if (!["admin", "student"].includes(profileData.role)) {
+          if (!["admin", "leadership"].includes(profileData.role)) {
             console.error("Invalid role:", profileData.role);
             return null;
           }
