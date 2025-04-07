@@ -1,41 +1,26 @@
 "use client"
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 interface Orchestra {
+  id: string;
   name: string;
   songs: string[];
 }
 
-interface ConcertOrderProps {
-  concertName: string;
+interface ConcertData {
+  id: string;
+  concert_name: string;
+  poster_image_url?: string;
+  orchestras: Orchestra[];
 }
 
-const concertOrder: Orchestra[] = [
-  {
-    name: "Camerata Orchestra",
-    songs: ["Geometric Dances #3, Triangle Dance", "Angry Spirits"],
-  },
-  {
-    name: "Concert Orchestra",
-    songs: ["Dark Catacombs", "Danse Diabolique"],
-  },
-  {
-    name: "Philharmonic Orchestra",
-    songs: ["Supernova", "Music from Wicked"],
-  },
-  {
-    name: "Symphony Orchestra",
-    songs: [
-      "Simple Symphony, Mvt 1: Boisterous Bourrée",
-      "Halloween Spooktacular",
-    ],
-  },
-  {
-    name: "Chamber Orchestra",
-    songs: ["Serenade for Strings, Mvt: Élégie", "Thriller"],
-  },
-];
+interface ConcertOrderProps {
+  concertName: string;
+  orchestras: Orchestra[];
+}
 
 const pageVariants = {
   initial: { opacity: 0, x: -50 },
@@ -72,7 +57,7 @@ const itemVariants = {
   }
 };
 
-const ConcertOrder: React.FC<ConcertOrderProps> = ({ concertName }) => {
+const ConcertOrder: React.FC<ConcertOrderProps> = ({ concertName, orchestras }) => {
   return (
     <motion.div
       className="grid gap-5 px-5 py-5 lg:gap-16"
@@ -94,17 +79,17 @@ const ConcertOrder: React.FC<ConcertOrderProps> = ({ concertName }) => {
           This was our last concert order, next concert coming soon!
         </motion.p>
         <div className="xxl:grid-cols-3 grid grid-cols-1 gap-8 md:grid-cols-1 lg:grid-cols-2">
-          {concertOrder.map((concert, index) => (
+          {orchestras.map((orchestra, index) => (
             <motion.div
-              key={index}
+              key={orchestra.id}
               className="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800 hover:shadow-xl transition-shadow duration-300"
               variants={itemVariants}
             >
               <h2 className="mb-4 text-2xl font-semibold text-gray-900 dark:text-white">
-                {index + 1}. {concert.name}
+                {index + 1}. {orchestra.name}
               </h2>
               <ul className="list-inside list-disc text-gray-700 dark:text-gray-300">
-                {concert.songs.map((song, songIndex) => (
+                {orchestra.songs.map((song, songIndex) => (
                   <li key={songIndex}>{song}</li>
                 ))}
               </ul>
@@ -117,6 +102,55 @@ const ConcertOrder: React.FC<ConcertOrderProps> = ({ concertName }) => {
 };
 
 export default function Concert() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [concertData, setConcertData] = useState<ConcertData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchConcertContent() {
+      try {
+        const response = await fetch('/api/admin/content/concerts');
+        
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.content) {
+          setConcertData(data.content);
+        } else {
+          setError("No concert data available");
+        }
+      } catch (err) {
+        console.error("Failed to fetch concert content:", err);
+        setError("Failed to load concert information. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    fetchConcertContent();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+        <p className="text-lg text-gray-600">Loading concert information...</p>
+      </div>
+    );
+  }
+
+  if (error || !concertData) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-4">
+        <h2 className="text-2xl font-bold text-red-600 mb-4">Oops!</h2>
+        <p className="text-lg text-center text-gray-700 max-w-md">{error || "Something went wrong. Please try again later."}</p>
+      </div>
+    );
+  }
+
   return (
     <AnimatePresence mode="wait">
       <motion.main
@@ -128,21 +162,26 @@ export default function Concert() {
         transition={pageTransition}
       >
         <div className="grid justify-items-center xl:flex xl:items-center xl:justify-evenly">
-          <motion.div
-            className="h-fit w-fit rounded-lg border border-gray-200 bg-white shadow sm:p-5"
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <Image
-              src="/CypressRanchOrchestraInstagramPhotos/FallConcertPoster.jpg"
-              alt="concert_img"
-              width={500}
-              height={500}
-              className="object-fit rounded-lg"
-            />
-          </motion.div>
-          <ConcertOrder concertName="Fall" />
+          {concertData.poster_image_url && (
+            <motion.div
+              className="h-fit w-fit rounded-lg border border-gray-200 bg-white shadow sm:p-5"
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <Image
+                src={concertData.poster_image_url}
+                alt="concert_img"
+                width={500}
+                height={500}
+                className="object-fit rounded-lg"
+              />
+            </motion.div>
+          )}
+          <ConcertOrder 
+            concertName={concertData.concert_name} 
+            orchestras={concertData.orchestras} 
+          />
         </div>
       </motion.main>
     </AnimatePresence>

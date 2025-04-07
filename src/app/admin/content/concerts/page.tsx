@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
@@ -13,35 +13,49 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Save, Trash2 } from "lucide-react";
+import { Plus, Save, Trash2, Loader2, Upload, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
-
+import { v4 as uuidv4 } from "uuid";
+import { ConcertsContent } from "@/types/concerts";
+import Image from "next/image";
 
 interface Orchestra {
+  id: string;
   name: string;
   songs: string[];
 }
 
 export default function ConcertContentManagement() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [contentId, setContentId] = useState<string>("");
+  const [posterImagePreview, setPosterImagePreview] = useState<string | null>(null);
+  
   // Concert name state
   const [concertName, setConcertName] = useState<string>("Fall");
-  // TODO: Fetch initial concert name from backend API
-
+  
+  // Poster image state
+  const [posterImageUrl, setPosterImageUrl] = useState<string>("");
+  
   // Orchestra groups state
   const [orchestras, setOrchestras] = useState<Orchestra[]>([
     {
+      id: uuidv4(),
       name: "Camerata Orchestra",
       songs: ["Geometric Dances #3, Triangle Dance", "Angry Spirits"],
     },
     {
+      id: uuidv4(),
       name: "Concert Orchestra",
       songs: ["Dark Catacombs", "Danse Diabolique"],
     },
     {
+      id: uuidv4(),
       name: "Philharmonic Orchestra",
       songs: ["Supernova", "Music from Wicked"],
     },
     {
+      id: uuidv4(),
       name: "Symphony Orchestra",
       songs: [
         "Simple Symphony, Mvt 1: Boisterous Bourrée",
@@ -49,11 +63,101 @@ export default function ConcertContentManagement() {
       ],
     },
     {
+      id: uuidv4(),
       name: "Chamber Orchestra",
       songs: ["Serenade for Strings, Mvt: Élégie", "Thriller"],
     },
   ]);
-  // TODO: Fetch orchestra groups data from backend API instead of using hardcoded data
+
+  // Fetch content on component mount
+  useEffect(() => {
+    async function fetchConcertContent() {
+      setIsLoading(true);
+      try {
+        const response = await fetch('/api/admin/content/concerts');
+        
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.content) {
+          setContentId(data.content.id);
+          setConcertName(data.content.concert_name);
+          setPosterImageUrl(data.content.poster_image_url || "");
+          if (data.content.orchestras && data.content.orchestras.length > 0) {
+            setOrchestras(data.content.orchestras);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch concert content:", error);
+        toast.error("Failed to load concert content", {
+          description: "There was an error loading the content. Please try refreshing the page.",
+          position: "top-center",
+          duration: 5000
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    fetchConcertContent();
+  }, []);
+
+  // Cleanup object URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      // Clean up object URL to prevent memory leaks
+      if (posterImagePreview && posterImagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(posterImagePreview);
+      }
+    };
+  }, [posterImagePreview]);
+
+  // Handle poster image upload
+  const handlePosterImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        // Revoke previous URL if it exists to prevent memory leaks
+        if (posterImagePreview && posterImagePreview.startsWith('blob:')) {
+          URL.revokeObjectURL(posterImagePreview);
+        }
+        
+        // Create a preview URL for the image
+        const url = URL.createObjectURL(file);
+        setPosterImagePreview(url);
+        
+        // Convert to base64 for API submission
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64String = reader.result as string;
+          setPosterImageUrl(base64String);
+        };
+        reader.onerror = () => {
+          throw new Error("FileReader failed to read the file");
+        };
+        reader.readAsDataURL(file);
+      } catch (error) {
+        console.error("Error processing image:", error);
+        toast.error("Failed to process image", {
+          description: "There was an error processing the selected image.",
+          position: "top-center",
+          duration: 5000
+        });
+      }
+    }
+  };
+
+  // Remove poster image
+  const removePosterImage = () => {
+    if (posterImagePreview && posterImagePreview.startsWith('blob:')) {
+      URL.revokeObjectURL(posterImagePreview);
+    }
+    setPosterImagePreview(null);
+    setPosterImageUrl("");
+  };
 
   // Handler for updating orchestra name
   const handleOrchestraNameChange = (index: number, value: string) => {
@@ -68,8 +172,6 @@ export default function ConcertContentManagement() {
     newOrchestras[orchestraIndex].songs[songIndex] = value;
     setOrchestras(newOrchestras);
   };
-  // TODO: Consider real-time updates to backend or track changes for later submission
-
 
   // Add a new song to an orchestra
   const addSong = (orchestraIndex: number) => {
@@ -77,8 +179,6 @@ export default function ConcertContentManagement() {
     newOrchestras[orchestraIndex].songs.push("");
     setOrchestras(newOrchestras);
   }; 
-  // TODO: Add song to backend database
-
 
   // Remove a song from an orchestra
   const removeSong = (orchestraIndex: number, songIndex: number) => {
@@ -86,13 +186,11 @@ export default function ConcertContentManagement() {
     newOrchestras[orchestraIndex].songs.splice(songIndex, 1);
     setOrchestras(newOrchestras);
   };     
-  // TODO: Remove song from backend database
 
   // Add a new orchestra group
   const addOrchestraGroup = () => {
-    setOrchestras([...orchestras, { name: "New Orchestra", songs: [""] }]);
+    setOrchestras([...orchestras, { id: uuidv4(), name: "New Orchestra", songs: [""] }]);
   };
-  // TODO: Add orchestra group to backend database
 
   // Remove an orchestra group
   const removeOrchestraGroup = (index: number) => {
@@ -100,29 +198,64 @@ export default function ConcertContentManagement() {
     newOrchestras.splice(index, 1);
     setOrchestras(newOrchestras);
   };
-  // TODO: Remove orchestra group from backend database
 
-  // Save changes (placeholder for backend integration)
+  // Save changes
   const saveChanges = async () => {
-    // TODO: Send updated concert data to backend API
-    console.log("Saving concert data:", { concertName, orchestras });
-    
-    toast.success("Changes saved", {
-      description: "Your concert information has been updated."
-    });
+    setIsSaving(true);
+    try {
+      const payload: ConcertsContent = {
+        id: contentId,
+        concert_name: concertName,
+        poster_image_url: posterImageUrl,
+        orchestras: orchestras
+      };
+      
+      const response = await fetch('/api/admin/content/concerts', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update concert content');
+      }
+      
+      toast.success("Changes saved", {
+        description: "Your concert information has been updated."
+      });
+    } catch (error) {
+      console.error("Failed to save concert content:", error);
+      toast.error("Failed to save changes", {
+        description: error instanceof Error ? error.message : "An unexpected error occurred"
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="container px-4 py-8 mx-auto flex flex-col items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="mt-4 text-muted-foreground">Loading concert content...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-10">
-
-    <Card className="mb-6">
+      <Card className="mb-6">
         <CardHeader>
-        <CardTitle>Concert Content Management</CardTitle>
-        <CardDescription>
+          <CardTitle>Concert Content Management</CardTitle>
+          <CardDescription>
             Update the content of your website&apos;s concert page. The changes will be reflected on the live site. This website is intended to be used on a desktop device. 
-        </CardDescription>
+          </CardDescription>
         </CardHeader>
-    </Card>
+      </Card>
+      
       <Tabs defaultValue="general" className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="general">General Settings</TabsTrigger>
@@ -139,7 +272,7 @@ export default function ConcertContentManagement() {
                 Update the concert name and primary settings that appear on the public concert page.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="concertName">Concert Name</Label>
                 <Input
@@ -149,8 +282,67 @@ export default function ConcertContentManagement() {
                   placeholder="e.g. Fall, Winter, Spring"
                 />
               </div>
-              <Button onClick={saveChanges} className="mt-4">
-                <Save className="mr-2 h-4 w-4" /> Save Changes
+              
+              <div className="space-y-4">
+                <Label>Concert Poster</Label>
+                <div className="relative aspect-[3/4] w-full max-w-[300px] overflow-hidden rounded-lg border border-dashed">
+                  {(posterImagePreview || posterImageUrl) ? (
+                    <div className="relative h-full w-full bg-gray-100">
+                      <Image 
+                        src={posterImagePreview || posterImageUrl}
+                        alt="Poster preview"
+                        fill
+                        className="object-cover"
+                        onError={(e) => {
+                          // Hide the image on error
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-gray-100">
+                      <ImageIcon className="h-12 w-12 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" className="flex items-center gap-1" asChild>
+                    <label htmlFor="poster-image-upload">
+                      <Upload className="h-4 w-4" />
+                      Choose Poster
+                    </label>
+                  </Button>
+                  <Input
+                    id="poster-image-upload"
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={handlePosterImageUpload}
+                  />
+                  {(posterImagePreview || posterImageUrl) && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex items-center gap-1"
+                      onClick={removePosterImage}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Remove
+                    </Button>
+                  )}
+                </div>
+              </div>
+              
+              <Button onClick={saveChanges} disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" /> Save Changes
+                  </>
+                )}
               </Button>
             </CardContent>
           </Card>
@@ -169,7 +361,7 @@ export default function ConcertContentManagement() {
               <div className="space-y-6">
                 {orchestras.map((orchestra, orchestraIndex) => (
                   <div 
-                    key={orchestraIndex} 
+                    key={orchestra.id} 
                     className="p-4 border rounded-md shadow-sm bg-white"
                   >
                     <div className="flex justify-between items-center mb-4">
@@ -234,8 +426,16 @@ export default function ConcertContentManagement() {
               
               <Separator className="my-6" />
               
-              <Button onClick={saveChanges} className="mt-4">
-                <Save className="mr-2 h-4 w-4" /> Save All Changes
+              <Button onClick={saveChanges} disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" /> Save All Changes
+                  </>
+                )}
               </Button>
             </CardContent>
           </Card>
@@ -252,22 +452,38 @@ export default function ConcertContentManagement() {
             </CardHeader>
             <CardContent>
               <div className="p-6 border rounded-lg bg-gray-50">
-                <h2 className="text-3xl font-bold mb-6">{concertName} Concert Order</h2>
-                <div className="grid gap-4 md:grid-cols-2">
-                  {orchestras.map((orchestra, index) => (
-                    <div key={index} className="bg-white p-4 rounded-lg shadow">
-                      <h3 className="text-xl font-semibold mb-2">
-                        {index + 1}. {orchestra.name}
-                      </h3>
-                      <ul className="list-disc list-inside">
-                        {orchestra.songs.map((song, songIndex) => (
-                          <li key={songIndex} className="text-gray-700">
-                            {song}
-                          </li>
-                        ))}
-                      </ul>
+                <div className="flex flex-col md:flex-row gap-8">
+                  {(posterImagePreview || posterImageUrl) && (
+                    <div className="md:w-1/3 lg:w-1/4">
+                      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg shadow-md">
+                        <Image 
+                          src={posterImagePreview || posterImageUrl}
+                          alt="Concert Poster"
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
                     </div>
-                  ))}
+                  )}
+                  <div className={`${(posterImagePreview || posterImageUrl) ? 'md:w-2/3 lg:w-3/4' : 'w-full'}`}>
+                    <h2 className="text-3xl font-bold mb-6">{concertName} Concert Order</h2>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {orchestras.map((orchestra, index) => (
+                        <div key={orchestra.id} className="bg-white p-4 rounded-lg shadow">
+                          <h3 className="text-xl font-semibold mb-2">
+                            {index + 1}. {orchestra.name}
+                          </h3>
+                          <ul className="list-disc list-inside">
+                            {orchestra.songs.map((song, songIndex) => (
+                              <li key={songIndex} className="text-gray-700">
+                                {song}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>

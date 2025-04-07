@@ -202,8 +202,7 @@ export default function Home() {
       <motion.section
         className="py-16 px-4 max-w-4xl mx-auto"
         initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: "-50px" }}
+        animate="visible"
         variants={fadeIn}
       >
         <h2 className="text-3xl font-semibold text-gray-800 mb-6 text-center">
