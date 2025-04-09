@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { FileMusicIcon as MusicNote, MapPin, Users, Upload, Trash2, Loader2, ImageIcon, GripVertical } from "lucide-react";
+import { toast, Toaster } from "sonner";
 
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,6 +68,7 @@ const SortableGalleryItem = ({ id, src, index, onDelete }: { id: string; src: st
 export default function TripsContentManagement() {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
   // State for page content
   const [content, setContent] = useState({
@@ -83,6 +85,9 @@ export default function TripsContentManagement() {
     { id: "img4", src: "/CypressRanchOrchestraInstagramPhotos/HoustonSymphonyTripArcade.jpg" },
     { id: "img5", src: "/CypressRanchOrchestraInstagramPhotos/Disney2023.jpg" },
   ]);
+  
+  // Content ID from the database (if it exists)
+  const [contentId, setContentId] = useState<string | null>(null);
   
   // State for new image upload
   const [newImagePreview, setNewImagePreview] = useState<string | null>(null);
@@ -109,6 +114,70 @@ export default function TripsContentManagement() {
     }
   ]);
   
+  // Fetch initial data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/admin/content/trips');
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch trips content: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.content) {
+          setContentId(data.content.id || null);
+          
+          // Set page content
+          setContent({
+            pageTitle: data.content.page_title || "Orchestra Trips & Socials",
+            pageSubtitle: data.content.page_subtitle || "Explore our adventures and memorable moments",
+            quote: data.content.quote || ""
+          });
+          
+          // Set gallery images
+          if (data.content.gallery_images && Array.isArray(data.content.gallery_images)) {
+            interface ApiGalleryImage {
+              id: string;
+              src: string;
+            }
+            
+            setGalleryImages(data.content.gallery_images.map((img: ApiGalleryImage) => ({
+              id: img.id,
+              src: img.src
+            })));
+          }
+          
+          // Set feature items
+          if (data.content.feature_items && Array.isArray(data.content.feature_items)) {
+            interface ApiFeatureItem {
+              id: string;
+              icon: string;
+              title: string;
+              description: string;
+            }
+            
+            setFeatureItems(data.content.feature_items.map((item: ApiFeatureItem) => ({
+              id: item.id,
+              icon: item.icon,
+              title: item.title,
+              description: item.description
+            })));
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching trips content:", error);
+        toast.error("Failed to load trips content. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, []);
+  
   // DnD sensors setup
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -125,8 +194,8 @@ export default function TripsContentManagement() {
       const url = URL.createObjectURL(file);
       setNewImagePreview(url);
       
-      // TODO: Upload image to server and get the URL
-      // For now, we're just using the local preview URL
+      // TODO: In a full implementation, we would upload the image to storage
+      // and get the actual URL back from the server
     }
   };
   
@@ -182,26 +251,75 @@ export default function TripsContentManagement() {
     setFeatureItems(newFeatureItems);
   };
   
-  // Mock save function
+  // Save function to update content
   const handleSave = async () => {
     setIsSaving(true);
     
-    // TODO: Save data to backend
-    // 1. Upload any new images that aren't already on the server
-    // 2. Save content text
-    // 3. Save gallery image order
-    // 4. Save feature items
-    
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsSaving(false);
-    
-    // TODO: Show success message or redirect
-    console.log("Content saved:", { content, galleryImages, featureItems });
+    try {
+      // Prepare the data for submission
+      const formData = {
+        id: contentId,
+        page_title: content.pageTitle,
+        page_subtitle: content.pageSubtitle,
+        quote: content.quote,
+        gallery_images: galleryImages.map((img, index) => ({
+          id: img.id,
+          src: img.src,
+          order_number: index + 1
+        })),
+        feature_items: featureItems.map((item, index) => ({
+          id: item.id,
+          icon: item.icon,
+          title: item.title,
+          description: item.description,
+          order_number: index + 1
+        }))
+      };
+      
+      // Submit the data
+      const response = await fetch('/api/admin/content/trips', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save trips content');
+      }
+      
+      const data = await response.json();
+      
+      // Update the content ID if we got one back
+      if (data.contentId) {
+        setContentId(data.contentId);
+      }
+      
+      // Show success message
+      toast.success("Trips content has been saved successfully.");
+      
+    } catch (error) {
+      console.error('Error saving trips content:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to save trips content');
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="container flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading content...</span>
+      </div>
+    );
+  }
   
   return (
     <div className="container px-4 py-6 mx-auto max-w-7xl">
+      <Toaster position="top-right" />
       <Breadcrumb className="mb-6">
         <BreadcrumbList>
           <BreadcrumbItem>

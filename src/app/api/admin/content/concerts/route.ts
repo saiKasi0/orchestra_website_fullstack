@@ -27,6 +27,7 @@ export async function GET(req: Request) {
             id: uuidv4(),
             concert_name: "Fall",
             poster_image_url: "",
+            no_concert_text: "No concert order is available at this time. Please check back later.",
             orchestras: []
           }
         });
@@ -77,6 +78,7 @@ export async function GET(req: Request) {
       id: concertData.id,
       concert_name: concertData.concert_name,
       poster_image_url: concertData.poster_image_url || '',
+      no_concert_text: concertData.no_concert_text || 'No concert order is available at this time. Please check back later.',
       orchestras: orchestrasWithSongs
     };
     
@@ -174,6 +176,7 @@ export async function PUT(req: Request) {
       .update({
         concert_name: content.concert_name,
         poster_image_url: content.poster_image_url,
+        no_concert_text: content.no_concert_text,
         updated_at: new Date().toISOString()
       })
       .eq('id', content.id);
@@ -184,7 +187,8 @@ export async function PUT(req: Request) {
         .from('concerts')
         .insert({
           concert_name: content.concert_name,
-          poster_image_url: content.poster_image_url
+          poster_image_url: content.poster_image_url,
+          no_concert_text: content.no_concert_text
         });
         
       if (insertError) {

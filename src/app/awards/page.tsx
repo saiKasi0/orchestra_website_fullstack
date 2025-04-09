@@ -1,17 +1,20 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Image from "next/image"
 import { motion } from "framer-motion"
+import { Loader2 } from "lucide-react"
+import { AwardsContent } from "@/types/awards"
 
-interface VarsityOrchestraCardProps {
+type VarsityOrchestraCardProps = {
   title: string
   imageSrc: string
   imageAlt: string
   index: number
 }
 
-const VarsityOrchestraCard: React.FC<VarsityOrchestraCardProps> = ({ title, imageSrc, imageAlt, index }) => {
+const VarsityOrchestraCard = ({ title, imageSrc, imageAlt, index }: VarsityOrchestraCardProps) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 50 }}
@@ -50,39 +53,61 @@ const VarsityOrchestraCard: React.FC<VarsityOrchestraCardProps> = ({ title, imag
   )
 }
 
+// Loading skeleton component
+const LoadingSkeleton = () => {
+  return (
+    <div className="min-h-screen flex justify-center items-center">
+      <div className="text-center">
+        <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4" />
+        <p className="text-lg">Loading awards...</p>
+      </div>
+    </div>
+  )
+}
+
 export default function Awards() {
-  const achievements = [
-    {
-      title: "Most Area 27 Region Players in CFISD!",
-      imageSrc: "/CypressRanchOrchestraInstagramPhotos/Region2023.jpg",
-      imageAlt: "Cypress Ranch Orchestra Region players posing for a group photo",
-    },
-    {
-      title: "Varsity UIL Orchestra Division 1 Rating",
-      imageSrc: "/CypressRanchOrchestraInstagramPhotos/Chamber2024Uil.jpg",
-      imageAlt: "Varsity UIL Orchestra performing at UIL competition",
-    },
-    {
-      title: "Sub-Non-Varsity A UIL Orchestra Division 1 Rating",
-      imageSrc: "/CypressRanchOrchestraInstagramPhotos/Symphony2024Uil.jpg",
-      imageAlt: "Sub-Non-Varsity A UIL Orchestra performing at UIL competition",
-    },
-    {
-      title: "Festival Disney Golden Mickey & String Orchestra Best in Class",
-      imageSrc: "/CypressRanchOrchestraInstagramPhotos/Disney2023.jpg",
-      imageAlt: "Cypress Ranch Orchestra winning Golden Mickey at Disney event",
-    },
-    {
-      title: "Symphony - Commended Winner, Citation of Excellence 2024",
-      imageSrc: "/CypressRanchOrchestraInstagramPhotos/SymphonyCitationOfExcellence.jpg",
-      imageAlt: "Symphony orchestra receiving Citation of Excellence award",
-    },
-    {
-      title: "Dallas Classic Orchestra Competition",
-      imageSrc: "/CypressRanchOrchestraInstagramPhotos/Dallas.jpg",
-      imageAlt: "Cypress Ranch Orchestra performing in Dallas",
-    },
-  ]
+  const [content, setContent] = useState<AwardsContent | null>(null)
+  const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchContent() {
+      try {
+        const response = await fetch("/api/content/awards")
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch content: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        
+        if (data.content) {
+          setContent(data.content)
+        } else {
+          throw new Error("No content received")
+        }
+      } catch (err) {
+        console.error("Error fetching awards content:", err)
+        setError("Failed to load awards content")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    fetchContent()
+  }, [])
+
+  if (isLoading) {
+    return <LoadingSkeleton />
+  }
+  
+  if (error) {
+    return <div className="min-h-screen flex justify-center items-center">Error loading content</div>
+  }
+  
+  if (!content) {
+    return <div className="min-h-screen flex justify-center items-center">No content available</div>
+  }
 
   return (
     <motion.main
@@ -104,7 +129,7 @@ export default function Awards() {
             transition={{ duration: 0.5 }}
             className="text-4xl font-bold leading-tight text-gray-900 md:text-5xl lg:text-6xl mb-4"
           >
-            Cypress Ranch Orchestra&apos;s Achievements
+            {content.title}
           </motion.h1>
           <motion.p
             initial={{ opacity: 0 }}
@@ -112,17 +137,14 @@ export default function Awards() {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="mt-5 text-lg text-gray-600 sm:text-xl"
           >
-            The Cypress Ranch Orchestra has consistently achieved remarkable success, earning a wide array of
-            prestigious accolades across our various ensembles and competitions. From local and regional contests to
-            state and national festivals, our orchestra&apos;s dedication to excellence has been recognized time and
-            time again.
+            {content.description}
           </motion.p>
         </motion.div>
       </section>
       <motion.div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 max-w-7xl mx-auto">
-        {achievements.map((achievement, index) => (
+        {content.achievements.map((achievement, index) => (
           <VarsityOrchestraCard
-            key={index}
+            key={achievement.id}
             index={index}
             title={achievement.title}
             imageSrc={achievement.imageSrc}

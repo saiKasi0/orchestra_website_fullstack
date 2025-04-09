@@ -34,6 +34,9 @@ export default function ConcertContentManagement() {
   // Concert name state
   const [concertName, setConcertName] = useState<string>("Fall");
   
+  // Add state for no concert order text
+  const [noConcertText, setNoConcertText] = useState("No concert order is available at this time. Please check back later.");
+  
   // Poster image state
   const [posterImageUrl, setPosterImageUrl] = useState<string>("");
   
@@ -86,6 +89,8 @@ export default function ConcertContentManagement() {
           setContentId(data.content.id);
           setConcertName(data.content.concert_name);
           setPosterImageUrl(data.content.poster_image_url || "");
+          // Set the no concert text if available, otherwise use default
+          setNoConcertText(data.content.no_concert_text || "No concert order is available at this time. Please check back later.");
           if (data.content.orchestras && data.content.orchestras.length > 0) {
             setOrchestras(data.content.orchestras);
           }
@@ -207,6 +212,7 @@ export default function ConcertContentManagement() {
         id: contentId,
         concert_name: concertName,
         poster_image_url: posterImageUrl,
+        no_concert_text: noConcertText, // Add the no concert text to the payload
         orchestras: orchestras
       };
       
@@ -281,6 +287,22 @@ export default function ConcertContentManagement() {
                   onChange={(e) => setConcertName(e.target.value)}
                   placeholder="e.g. Fall, Winter, Spring"
                 />
+              </div>
+              
+              {/* Add No Concert Text field */}
+              <div className="space-y-2">
+                <Label htmlFor="noConcertText">
+                  No Concert Order Text
+                </Label>
+                <Input
+                  id="noConcertText"
+                  value={noConcertText}
+                  onChange={(e) => setNoConcertText(e.target.value)}
+                  placeholder="Text to display when no concert order is available"
+                />
+                <p className="text-sm text-muted-foreground">
+                  This text will be displayed when no orchestra groups are defined.
+                </p>
               </div>
               
               <div className="space-y-4">
@@ -468,20 +490,27 @@ export default function ConcertContentManagement() {
                   <div className={`${(posterImagePreview || posterImageUrl) ? 'md:w-2/3 lg:w-3/4' : 'w-full'}`}>
                     <h2 className="text-3xl font-bold mb-6">{concertName} Concert Order</h2>
                     <div className="grid gap-4 md:grid-cols-2">
-                      {orchestras.map((orchestra, index) => (
-                        <div key={orchestra.id} className="bg-white p-4 rounded-lg shadow">
-                          <h3 className="text-xl font-semibold mb-2">
-                            {index + 1}. {orchestra.name}
-                          </h3>
-                          <ul className="list-disc list-inside">
-                            {orchestra.songs.map((song, songIndex) => (
-                              <li key={songIndex} className="text-gray-700">
-                                {song}
-                              </li>
-                            ))}
-                          </ul>
+                      {orchestras.length > 0 ? (
+                        orchestras.map((orchestra, index) => (
+                          <div key={orchestra.id} className="bg-white p-4 rounded-lg shadow">
+                            <h3 className="text-xl font-semibold mb-2">
+                              {index + 1}. {orchestra.name}
+                            </h3>
+                            <ul className="list-disc list-inside">
+                              {orchestra.songs.map((song, songIndex) => (
+                                <li key={songIndex} className="text-gray-700">
+                                  {song}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="col-span-2 text-center py-8 text-gray-500">
+                          {/* Show the no concert text in the preview */}
+                          {noConcertText}
                         </div>
-                      ))}
+                      )}
                     </div>
                   </div>
                 </div>

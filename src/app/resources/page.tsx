@@ -7,6 +7,36 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
 import { ResourcesContent } from "@/types/resources"
 
+// Skeleton component for loading state
+const ResourcesSkeleton: React.FC = () => {
+  return (
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        {/* Header skeleton */}
+        <div className="h-10 w-64 bg-gray-200 rounded-md mx-auto mb-8 animate-pulse" />
+
+        {/* Calendar card skeleton */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="h-7 w-48 bg-gray-200 rounded-md mb-4 animate-pulse" />
+            <div className="h-[600px] w-full bg-gray-200 rounded-lg animate-pulse" />
+          </CardContent>
+        </Card>
+
+        {/* Support video card skeleton */}
+        <div className="mt-12">
+          <Card>
+            <CardContent className="p-6">
+              <div className="h-6 w-3/4 bg-gray-200 rounded-md mb-4 animate-pulse" />
+              <div className="h-[400px] w-full bg-gray-200 rounded-lg animate-pulse" />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Resources: React.FC = () => {
   const [content, setContent] = useState<ResourcesContent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,14 +66,7 @@ const Resources: React.FC = () => {
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-900 mx-auto mb-4" />
-          <p className="text-gray-600">Loading resources...</p>
-        </div>
-      </div>
-    );
+    return <ResourcesSkeleton />;
   }
 
   // Error state

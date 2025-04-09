@@ -15,6 +15,7 @@ export const concertsContentSchema = z.object({
   id: z.string().optional(),
   concert_name: z.string().min(1, "Concert name is required"),
   poster_image_url: z.string().optional(),
+  no_concert_text: z.string().optional().default("No concert order is available at this time. Please check back later."),
   orchestras: z.array(orchestraSchema)
 });
 

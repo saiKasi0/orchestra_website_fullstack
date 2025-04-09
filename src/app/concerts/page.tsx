@@ -14,6 +14,7 @@ interface ConcertData {
   id: string;
   concert_name: string;
   poster_image_url?: string;
+  no_concert_text?: string;
   orchestras: Orchestra[];
 }
 
@@ -23,15 +24,13 @@ interface ConcertOrderProps {
 }
 
 const pageVariants = {
-  initial: { opacity: 0, x: -50 },
-  in: { opacity: 1, x: 0 },
-  out: { opacity: 0, x: 50 }
+  initial: { opacity: 0 },
+  in: { opacity: 1 },
+  out: { opacity: 0 }
 };
 
 const pageTransition = {
-  type: "tween",
-  ease: "anticipate",
-  duration: 0.5
+  duration: 0.3
 };
 
 const containerVariants = {
@@ -39,20 +38,18 @@ const containerVariants = {
   visible: {
     opacity: 1,
     transition: {
-      delayChildren: 0.3,
-      staggerChildren: 0.2
+      delayChildren: 0.1,
+      staggerChildren: 0.1
     }
   }
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    y: 0,
     transition: {
-      duration: 0.5,
-      ease: "easeOut"
+      duration: 0.3
     }
   }
 };
@@ -148,6 +145,29 @@ export default function Concert() {
         <h2 className="text-2xl font-bold text-red-600 mb-4">Oops!</h2>
         <p className="text-lg text-center text-gray-700 max-w-md">{error || "Something went wrong. Please try again later."}</p>
       </div>
+    );
+  }
+  
+  // If there are no orchestras, render the no concert text instead of empty concert order
+  if (concertData.orchestras.length === 0) {
+    return (
+      <AnimatePresence mode="wait">
+        <motion.main
+          className="m-5"
+          initial="initial"
+          animate="in"
+          exit="out"
+          variants={pageVariants}
+          transition={pageTransition}
+        >
+          <div className="flex flex-col items-center justify-center min-h-[40vh]">
+            <h1 className="text-3xl font-bold mb-6">{concertData.concert_name}</h1>
+            <p className="text-lg text-center text-gray-700 max-w-lg">
+              {concertData.no_concert_text || "No concert order is available at this time. Please check back later."}
+            </p>
+          </div>
+        </motion.main>
+      </AnimatePresence>
     );
   }
 

@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Loader2, Trash2, Upload, Plus, ImageIcon } from "lucide-react";
+import { toast, Toaster } from "sonner";
+import { Achievement, AwardsContent } from "@/types/awards";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,55 +13,68 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+
+type ExtendedAchievement = Achievement & {
+  imagePreview: string | null;
+};
 
 export default function AwardsContentManagement() {
   const router = useRouter();
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [contentId, setContentId] = useState<string | null>(null);
   
   // Page content state
-  const [pageContent, setPageContent] = useState({
-    title: "Cypress Ranch Orchestra's Achievements",
-    description: "The Cypress Ranch Orchestra has consistently achieved remarkable success, earning a wide array of prestigious accolades across our various ensembles and competitions. From local and regional contests to state and national festivals, our orchestra's dedication to excellence has been recognized time and time again."
+  const [pageContent, setPageContent] = useState<Pick<AwardsContent, 'title' | 'description'>>({
+    title: "",
+    description: ""
   });
   
   // Achievements state
-  const [achievements, setAchievements] = useState([
-    {
-      id: "1",
-      title: "Most Area 27 Region Players in CFISD!",
-      imageSrc: "/CypressRanchOrchestraInstagramPhotos/Region2023.jpg",
-      imageAlt: "Cypress Ranch Orchestra Region players posing for a group photo",
-      imagePreview: null
-    },
-    {
-      id: "2",
-      title: "Varsity UIL Orchestra Division 1 Rating",
-      imageSrc: "/CypressRanchOrchestraInstagramPhotos/Chamber2024Uil.jpg",
-      imageAlt: "Varsity UIL Orchestra performing at UIL competition",
-      imagePreview: null
-    },
-    {
-      id: "3",
-      title: "Sub-Non-Varsity A UIL Orchestra Division 1 Rating",
-      imageSrc: "/CypressRanchOrchestraInstagramPhotos/Symphony2024Uil.jpg",
-      imageAlt: "Sub-Non-Varsity A UIL Orchestra performing at UIL competition",
-      imagePreview: null
-    },
-    {
-      id: "4",
-      title: "Festival Disney Golden Mickey & String Orchestra Best in Class",
-      imageSrc: "/CypressRanchOrchestraInstagramPhotos/Disney2023.jpg",
-      imageAlt: "Cypress Ranch Orchestra winning Golden Mickey at Disney event",
-      imagePreview: null
-    },
-    {
-      id: "5",
-      title: "Symphony - Commended Winner, Citation of Excellence 2024",
-      imageSrc: "/CypressRanchOrchestraInstagramPhotos/SymphonyCitationOfExcellence.jpg",
-      imageAlt: "Symphony orchestra receiving Citation of Excellence award",
-      imagePreview: null
+  const [achievements, setAchievements] = useState<ExtendedAchievement[]>([]);
+
+  // Fetch content on page load
+  useEffect(() => {
+    async function fetchContent() {
+      try {
+        const response = await fetch('/api/admin/content/awards');
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.content) {
+          setContentId(data.content.id);
+          setPageContent({
+            title: data.content.title || "",
+            description: data.content.description || ""
+          });
+          
+          // Map achievements
+          const fetchedAchievements = data.content.achievements.map((item: Achievement): ExtendedAchievement => ({
+            id: item.id,
+            title: item.title,
+            imageSrc: item.imageSrc,
+            imageAlt: item.imageAlt,
+            imagePreview: null,
+            order_number: item.order_number
+          }));
+          
+          setAchievements(fetchedAchievements);
+        }
+      } catch (error) {
+        console.error("Error fetching awards content:", error);
+        toast.error("Failed to load content");
+      } finally {
+        setIsLoading(false);
+      }
     }
-  ]);
+    
+    fetchContent();
+  }, []);
 
   // Handle page content changes
   const handlePageContentChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -68,9 +83,12 @@ export default function AwardsContentManagement() {
   };
 
   // Handle achievement changes
-  const handleAchievementChange = (index: number, field: string, value: string) => {
+  const handleAchievementChange = (
+    index: number, 
+    field: 'title' | 'imageSrc' | 'imageAlt', 
+    value: string
+  ) => {
     const newAchievements = [...achievements];
-    // @ts-expect-error - We know these fields exist
     newAchievements[index][field] = value;
     setAchievements(newAchievements);
   };
@@ -83,9 +101,14 @@ export default function AwardsContentManagement() {
       // Create a preview URL for the image
       const previewUrl = URL.createObjectURL(file);
       newAchievements[index].imagePreview = previewUrl;
-      setAchievements(newAchievements);
       
-      // TODO: Implement actual file upload to backend/storage
+      // In a real scenario, we would upload the image to a server
+      // For now, we'll just update the imageSrc with the filename
+      // This simulates what would happen after a successful upload
+      const fileName = `/CypressRanchOrchestraInstagramPhotos/${file.name}`;
+      newAchievements[index].imageSrc = fileName;
+      
+      setAchievements(newAchievements);
     }
   };
 
@@ -99,7 +122,8 @@ export default function AwardsContentManagement() {
         title: "New Achievement",
         imageSrc: "",
         imageAlt: "Achievement image",
-        imagePreview: null
+        imagePreview: null,
+        order_number: achievements.length + 1
       }
     ]);
   };
@@ -108,7 +132,14 @@ export default function AwardsContentManagement() {
   const removeAchievement = (index: number) => {
     const newAchievements = [...achievements];
     newAchievements.splice(index, 1);
-    setAchievements(newAchievements);
+    
+    // Update order numbers
+    const reorderedAchievements = newAchievements.map((achievement, i) => ({
+      ...achievement,
+      order_number: i + 1
+    }));
+    
+    setAchievements(reorderedAchievements);
   };
 
   // Save changes
@@ -116,17 +147,57 @@ export default function AwardsContentManagement() {
     setIsSaving(true);
     
     try {
-      // TODO: Implement API call to save data
-      // 1. Save page content (title, description)
-      // 2. Save achievements (including image uploads)
+      // Prepare the data payload
+      const payload = {
+        content: {
+          id: contentId,
+          title: pageContent.title,
+          description: pageContent.description,
+          achievements: achievements.map((achievement, index) => ({
+            id: achievement.id,
+            title: achievement.title,
+            imageSrc: achievement.imageSrc,
+            imageAlt: achievement.imageAlt,
+            order_number: index + 1
+          }))
+        }
+      };
       
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Make API call to save data
+      const response = await fetch('/api/admin/content/awards', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
       
-      // TODO: Show success message
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      // Update contentId if this was a new record
+      if (result.contentId && !contentId) {
+        setContentId(result.contentId);
+      }
+      
+      // Show success message
+      toast.success("Content saved successfully");
+      
+      // Clean up any image previews
+      const clearedPreviews = achievements.map(achievement => ({
+        ...achievement,
+        imagePreview: null
+      }));
+      
+      setAchievements(clearedPreviews);
+      
     } catch (error) {
-      // TODO: Handle error and show error message
       console.error("Error saving content:", error);
+      toast.error("Failed to save content");
     } finally {
       setIsSaving(false);
     }
@@ -139,8 +210,38 @@ export default function AwardsContentManagement() {
     setAchievements(newAchievements);
   };
 
+  if (isLoading) {
+    return (
+      <div className="container px-4 py-6 mx-auto max-w-7xl flex justify-center items-center h-[50vh]">
+        <div className="text-center">
+          <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4" />
+          <p className="text-lg">Loading content...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container px-4 py-6 mx-auto max-w-7xl">
+      <Toaster position="top-right" />
+
+      <div className="mb-6">
+      <Breadcrumb className="mb-6">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/admin/dashboard">Dashboard</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/admin/content">Content</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/admin/content/competitions">Competitions</BreadcrumbLink>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
 
       <Card className="mb-6">
         <CardHeader>
