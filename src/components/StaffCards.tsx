@@ -68,17 +68,31 @@ const StaffCards: React.FC<StaffCardsProps> = ({ data }) => {
       animate={{ opacity: 1 }}
       transition={{ duration: 2 }}
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-16">
-        {staffMembers.map((staff) => (
-          <StaffCard
-            key={staff.id}
-            id={staff.id}
-            name={staff.name}
-            imageUrl={staff.imageUrl}
-            description={staff.description}
-          />
-        ))}
-      </div>
+      {staffMembers.length === 1 ? (
+        <div className="flex justify-center">
+          <div className="max-w-xl">
+            <StaffCard
+              key={staffMembers[0].id}
+              id={staffMembers[0].id}
+              name={staffMembers[0].name}
+              imageUrl={staffMembers[0].imageUrl}
+              description={staffMembers[0].description}
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-16">
+          {staffMembers.map((staff) => (
+            <StaffCard
+              key={staff.id}
+              id={staff.id}
+              name={staff.name}
+              imageUrl={staff.imageUrl}
+              description={staff.description}
+            />
+          ))}
+        </div>
+      )}
     </motion.div>
   )
 }

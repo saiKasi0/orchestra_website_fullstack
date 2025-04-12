@@ -6,7 +6,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import { v4 as uuidv4 } from "uuid";
 
 // GET endpoint for trips content
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const supabase = createClient();
     

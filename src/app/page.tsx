@@ -410,7 +410,9 @@ export default function Home() {
                 )}
                 
                 {content.leadership_sections?.length > 0 && (
-                  <LeadershipCards data={content.leadership_sections} />
+                  <div className="leadership-sections-container">
+                    <LeadershipCards data={content.leadership_sections} />
+                  </div>
                 )}
               </>
             )}

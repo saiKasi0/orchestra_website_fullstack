@@ -7,7 +7,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { FileMusicIcon as MusicNote, MapPin, Users, Upload, Trash2, Loader2, ImageIcon, GripVertical } from "lucide-react";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -319,7 +319,6 @@ export default function TripsContentManagement() {
   
   return (
     <div className="container px-4 py-6 mx-auto max-w-7xl">
-      <Toaster position="top-right" />
       <Breadcrumb className="mb-6">
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -343,6 +342,16 @@ export default function TripsContentManagement() {
             Update the content of the Trips & Socials page. Changes will be reflected on the live site. This website is intended to be used on a desktop device. 
           </CardDescription>
         </CardHeader>
+        <CardContent>
+          <div className="text-sm text-muted-foreground bg-muted p-4 rounded-lg">
+            <h3 className="font-medium mb-2">Currently Published Content</h3>
+            <p>Page Title: <span className="font-mono">{content.pageTitle || "(empty)"}</span></p>
+            <p>Subtitle: <span className="font-mono">{content.pageSubtitle || "(empty)"}</span></p>
+            <p>Quote: <span className="font-mono">{content.quote ? `${content.quote.substring(0, 50)}${content.quote.length > 50 ? '...' : ''}` : "(empty)"}</span></p>
+            <p>Gallery Images: {galleryImages.length} images displayed</p>
+            <p>Feature Items: {featureItems.length} feature items displayed</p>
+          </div>
+        </CardContent>
       </Card>
       
       <Tabs defaultValue="page" className="w-full">

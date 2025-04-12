@@ -1,6 +1,7 @@
 "use client";
 
 import { SessionProvider } from "next-auth/react";
+import { Toaster } from "sonner";
 
 export default function AdminLayout({
   children,
@@ -9,7 +10,10 @@ export default function AdminLayout({
 }) {
   return (
     <SessionProvider>
-      <div className="min-h-screen bg-gray-50">{children}</div>
+      <div className="min-h-screen bg-gray-50">
+        <Toaster />
+        {children}
+      </div>
     </SessionProvider>
   );
 }

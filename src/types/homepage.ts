@@ -29,6 +29,7 @@ export const leadershipMemberSchema = z.object({
 export const leadershipSectionSchema = z.object({
   id: z.string(),
   name: z.string(),
+  color: z.string().default("#3b82f6"), // Default blue color
   members: z.array(leadershipMemberSchema),
 });
 

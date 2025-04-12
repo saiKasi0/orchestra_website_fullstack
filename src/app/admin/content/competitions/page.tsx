@@ -225,8 +225,17 @@ export default function CompetitionContentManagement() {
         <CardHeader>
             <CardTitle>Competition Management</CardTitle>
             <CardDescription>
-            Update the content of your website&apos;s competitions page. The changes will be reflected on the live site. This website is intended to be used on a desktop device. </CardDescription>
+            Update the content of your website&apos;s competitions page. The changes will be reflected on the live site. This website is intended to be used on a desktop device.
+            </CardDescription>
         </CardHeader>
+        <CardContent>
+          <div className="text-sm text-muted-foreground bg-muted p-4 rounded-lg">
+            <h3 className="font-medium mb-2">Currently Published Content</h3>
+            <p>Page Title: <span className="font-mono">{content.title || "(empty)"}</span></p>
+            <p>Description: <span className="font-mono">{content.description ? `${content.description.substring(0, 50)}${content.description.length > 50 ? '...' : ''}` : "(empty)"}</span></p>
+            <p>Competitions: {content.competitions?.length || 0} competitions listed</p>
+          </div>
+        </CardContent>
         </Card>
 
         {/* Main Content */}

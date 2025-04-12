@@ -6,7 +6,7 @@ import { awardsContentSchema } from "@/types/awards";
 import { v4 as uuidv4 } from "uuid";
 
 // GET endpoint for awards content
-export async function GET(req: Request) {
+export async function GET() {
   try {
     // Check authentication
     const session = await getServerSession(authOptions);

@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import type React from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
-import { Loader2 } from "lucide-react"
 import { ResourcesContent } from "@/types/resources"
 
 // Skeleton component for loading state

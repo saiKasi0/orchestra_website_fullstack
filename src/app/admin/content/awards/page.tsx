@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Loader2, Trash2, Upload, Plus, ImageIcon } from "lucide-react";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { Achievement, AwardsContent } from "@/types/awards";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -223,7 +223,6 @@ export default function AwardsContentManagement() {
 
   return (
     <div className="container px-4 py-6 mx-auto max-w-7xl">
-      <Toaster position="top-right" />
 
       <div className="mb-6">
       <Breadcrumb className="mb-6">
@@ -250,6 +249,15 @@ export default function AwardsContentManagement() {
             Update the awards and achievements displayed on your website. Changes will be reflected on the live site. This website is intended to be used on a desktop device. 
           </CardDescription>
         </CardHeader>
+        <CardContent>
+          <div className="text-sm text-muted-foreground bg-muted p-4 rounded-lg">
+            <h3 className="font-medium mb-2">Currently Published Content</h3>
+            <p>Page Title: <span className="font-mono">{pageContent.title || "(empty)"}</span></p>
+            <p>Description: <span className="font-mono">{pageContent.description ? `${pageContent.description.substring(0, 50)}${pageContent.description.length > 50 ? '...' : ''}` : "(empty)"}</span></p>
+            <p>Achievements: {achievements.length} items displayed</p>
+            <p>Images: {achievements.filter(a => a.imageSrc).length} of {achievements.length} achievements have images</p>
+          </div>
+        </CardContent>
       </Card>
 
       {/* Page Header Content */}

@@ -210,7 +210,7 @@ export default function HomepageContentManagementPage() {
       id: uuidv4(),
       name: "New Staff Member",
       position: "Position",
-      image_url: "/images/placeholder-staff.jpg",
+      image_url: "", 
       bio: "Staff biography"
     }]);
   }, []);
@@ -227,14 +227,17 @@ export default function HomepageContentManagementPage() {
   // Add a new leadership section
   const addLeadershipSection = useCallback(() => {
     const newSectionId = uuidv4();
-    setLeadershipSections(prev => [
-      ...prev, 
-      {
-        id: newSectionId,
-        name: "New Section",
-        members: []
-      }
-    ]);
+    setLeadershipSections((prevSections) => {
+      return [
+        ...prevSections, 
+        {
+          id: newSectionId,
+          name: "New Section",
+          color: "#fcd207", 
+          members: []
+        }
+      ];
+    });
   }, []);
 
   // Remove a leadership section
@@ -262,7 +265,7 @@ export default function HomepageContentManagementPage() {
       newSections[sectionIndex].members.push({
         id: uuidv4(),
         name: "New Leadership Member",
-        image_url: "/images/placeholder-student.jpg"
+        image_url: "" // Removed placeholder image path
       });
       return newSections;
     });
@@ -319,7 +322,7 @@ export default function HomepageContentManagementPage() {
           setLeadershipSections(prev => {
             const newSections = [...prev];
             newSections[sectionIndex].members[memberIndex].image_url = base64String;
-            return newSections;
+            return newSections; 
           });
         };
         reader.onerror = () => {
@@ -693,6 +696,7 @@ export default function HomepageContentManagementPage() {
             </Card>
           </TabsContent>
 
+          {/* FIXME  Backend integeration */}
           {/* Staff & Leadership Tab */}
           <TabsContent value="staff" className="space-y-6">
             <Card>
@@ -869,6 +873,30 @@ export default function HomepageContentManagementPage() {
                                   value={section.name}
                                   onChange={(e) => updateSectionName(sectionIndex, e.target.value)}
                                 />
+                              </div>
+                              
+                              <div className="space-y-2">
+                                <Label htmlFor={`section_color_${sectionIndex}`}>Section Color</Label>
+                                <div className="flex items-center gap-2">
+                                  <div 
+                                    className="h-6 w-6 rounded-full border shadow" 
+                                    style={{ backgroundColor: section.color || '#3b82f6' }}
+                                  />
+                                  <Input
+                                    id={`section_color_${sectionIndex}`}
+                                    type="color"
+                                    value={section.color || '#3b82f6'}
+                                    className="w-16 h-8 p-1"
+                                    onChange={(e) => {
+                                      setLeadershipSections(prev => {
+                                        const newSections = [...prev];
+                                        newSections[sectionIndex].color = e.target.value;
+                                        return newSections;
+                                      });
+                                    }}
+                                  />
+                                  <span className="text-xs text-muted-foreground">{section.color || '#3b82f6'}</span>
+                                </div>
                               </div>
                               
                               <div className="flex justify-between items-center">

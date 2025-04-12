@@ -30,9 +30,9 @@ function ResourcesContentManagement() {
   
   // State for resources content
   const [content, setContent] = useState<ResourcesContent>({
-    calendar_url: "https://calendar.google.com/calendar/embed?src=c_20p6293m4hda8ecdv1k63ki418%40group.calendar.google.com&amp",
-    support_title: "Just For Some Support :)",
-    youtube_url: "https://www.youtube.com/embed/QkklAQLhnQY?si=HGTk2aKkxV3r1ITb",
+    calendar_url: "",
+    support_title: "",
+    youtube_url: "",
   });
 
   // Fetch initial data
@@ -137,6 +137,14 @@ function ResourcesContentManagement() {
             Update the content of your website&apos;s resources page. The changes will be reflected on the live site.
           </CardDescription>
         </CardHeader>
+        <CardContent>
+          <div className="text-sm text-muted-foreground bg-muted p-4 rounded-lg">
+            <h3 className="font-medium mb-2">Currently Published Content</h3>
+            <p>Calendar URL: <span className="font-mono text-xs break-all">{content.calendar_url || "(empty)"}</span></p>
+            <p>Support Section Title: <span className="font-mono">{content.support_title || "(empty)"}</span></p>
+            <p>YouTube Video URL: <span className="font-mono text-xs break-all">{content.youtube_url || "(empty)"}</span></p>
+          </div>
+        </CardContent>
       </Card>
 
       <Tabs defaultValue="calendar" className="w-full">

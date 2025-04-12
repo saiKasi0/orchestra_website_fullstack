@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 
 
 // GET endpoint for concerts content
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const supabase = createClient();
     
@@ -142,7 +142,7 @@ export async function PUT(req: Request) {
         const filePath = `concert_images/${filename}`;
         
         // Upload to Supabase storage
-        const { data: uploadData, error: uploadError } = await supabase
+        const { error: uploadError } = await supabase
           .storage
           .from('concert-images')
           .upload(filePath, binaryData, {

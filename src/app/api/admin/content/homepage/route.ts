@@ -6,7 +6,7 @@ import { homepageContentSchema } from "@/types/homepage";
 import { v4 as uuidv4 } from "uuid";
 
 // Get homepage content
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const supabase = createClient();
     
@@ -72,6 +72,7 @@ export async function GET(req: Request) {
         return {
           id: section.section_id,
           name: section.name,
+          color: section.color || '#3b82f6', // Include color with default fallback
           members: members.map(member => ({
             id: member.member_id,
             name: member.name,
@@ -167,7 +168,7 @@ export async function PUT(req: Request) {
         const filePath = `hero_images/${filename}`;
         
         // Upload to Supabase storage
-        const { data: uploadData, error: uploadError } = await supabase
+        const { error: uploadError } = await supabase
           .storage
           .from('homepage-images')
           .upload(filePath, binaryData, {
@@ -221,7 +222,7 @@ export async function PUT(req: Request) {
             const filePath = `staff_images/${filename}`;
             
             // Upload to Supabase storage
-            const { data: uploadData, error: uploadError } = await supabase
+            const { error: uploadError } = await supabase
               .storage
               .from('homepage-images')
               .upload(filePath, binaryData, {
@@ -279,7 +280,7 @@ export async function PUT(req: Request) {
                 const filePath = `leadership_images/${filename}`;
                 
                 // Upload to Supabase storage
-                const { data: uploadData, error: uploadError } = await supabase
+                const { error: uploadError } = await supabase
                   .storage
                   .from('homepage-images')
                   .upload(filePath, binaryData, {
@@ -434,14 +435,13 @@ export async function PUT(req: Request) {
     for (let i = 0; i < content.leadership_sections.length; i++) {
       const section = content.leadership_sections[i];
       
-      // Check if section already exists
-      const { data: existingSection, error: checkSectionError } = await supabase
+      // Check if section already exists - modified to avoid .single() error
+      const { error: checkSectionError } = await supabase
         .from('leadership_sections')
         .select('*')
-        .eq('section_id', section.id)
-        .single();
+        .eq('section_id', section.id);
       
-      if (checkSectionError && !checkSectionError.message.includes('No rows found')) {
+      if (checkSectionError) {
         console.error(`Error checking section ${section.id}:`, checkSectionError);
         return NextResponse.json({ error: "Failed to update leadership sections" }, { status: 500 });
       }
@@ -452,6 +452,7 @@ export async function PUT(req: Request) {
         .upsert({
           section_id: section.id,
           name: section.name,
+          color: section.color || '#3b82f6', // Add color field
           order_number: i,
         }, { onConflict: 'section_id' });
         

@@ -18,7 +18,7 @@ const createUserSchema = z.object({
 });
 
 // Get all users
-export async function GET(req: Request) {
+export async function GET() {
   try {
     // Check authentication and authorization
     const session = await getServerSession(authOptions);

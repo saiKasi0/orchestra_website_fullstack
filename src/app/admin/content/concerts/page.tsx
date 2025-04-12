@@ -32,45 +32,16 @@ export default function ConcertContentManagement() {
   const [posterImagePreview, setPosterImagePreview] = useState<string | null>(null);
   
   // Concert name state
-  const [concertName, setConcertName] = useState<string>("Fall");
+  const [concertName, setConcertName] = useState<string>("");
   
   // Add state for no concert order text
-  const [noConcertText, setNoConcertText] = useState("No concert order is available at this time. Please check back later.");
+  const [noConcertText, setNoConcertText] = useState("");
   
   // Poster image state
   const [posterImageUrl, setPosterImageUrl] = useState<string>("");
   
   // Orchestra groups state
-  const [orchestras, setOrchestras] = useState<Orchestra[]>([
-    {
-      id: uuidv4(),
-      name: "Camerata Orchestra",
-      songs: ["Geometric Dances #3, Triangle Dance", "Angry Spirits"],
-    },
-    {
-      id: uuidv4(),
-      name: "Concert Orchestra",
-      songs: ["Dark Catacombs", "Danse Diabolique"],
-    },
-    {
-      id: uuidv4(),
-      name: "Philharmonic Orchestra",
-      songs: ["Supernova", "Music from Wicked"],
-    },
-    {
-      id: uuidv4(),
-      name: "Symphony Orchestra",
-      songs: [
-        "Simple Symphony, Mvt 1: Boisterous Bourrée",
-        "Halloween Spooktacular",
-      ],
-    },
-    {
-      id: uuidv4(),
-      name: "Chamber Orchestra",
-      songs: ["Serenade for Strings, Mvt: Élégie", "Thriller"],
-    },
-  ]);
+  const [orchestras, setOrchestras] = useState<Orchestra[]>([]);
 
   // Fetch content on component mount
   useEffect(() => {
@@ -260,6 +231,15 @@ export default function ConcertContentManagement() {
             Update the content of your website&apos;s concert page. The changes will be reflected on the live site. This website is intended to be used on a desktop device. 
           </CardDescription>
         </CardHeader>
+        <CardContent>
+          <div className="text-sm text-muted-foreground bg-muted p-4 rounded-lg">
+            <h3 className="font-medium mb-2">Currently Published Content</h3>
+            <p>Concert Name: <span className="font-mono">{concertName || "(empty)"}</span></p>
+            <p>Poster Image: {posterImageUrl ? "Uploaded" : "None"}</p>
+            <p>Orchestra Groups: {orchestras.length} groups configured</p>
+            <p>Total Songs: {orchestras.reduce((total, orchestra) => total + orchestra.songs.length, 0)}</p>
+          </div>
+        </CardContent>
       </Card>
       
       <Tabs defaultValue="general" className="w-full">

@@ -4,18 +4,8 @@ import { resourcesContentSchema } from "@/types/resources";
 import { createClient } from "@/utils/supabase/server";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 
-// Resources content table schema
-// create table public.resources_content (
-//   id bigint primary key generated always as identity,
-//   calendar_url text not null,
-//   support_title text not null,
-//   youtube_url text not null,
-//   created_at timestamptz default now() not null,
-//   updated_at timestamptz default now() not null
-// );
-
 // GET endpoint for resources content
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const supabase = createClient();
     

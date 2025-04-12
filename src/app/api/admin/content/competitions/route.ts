@@ -5,7 +5,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import { competitionsContentSchema } from "@/types/competitions";
 
 // GET endpoint for competitions content
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const supabase = createClient();
     

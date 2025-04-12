@@ -1,83 +1,81 @@
 "use client"
 
-import { motion } from "framer-motion"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import Image from 'next/image';
 
 export interface LeadershipMemberProps {
   name: string
   image: string
 }
 
-interface TeamCardProps {
-  teamName: string
-  teamColor: string
-  members: LeadershipMemberProps[]
-}
+type LeadershipMemberDisplayProps = {
+  name: string;
+  imageUrl: string;
+  sectionColor?: string;
+  size?: 'normal' | 'large' | 'extra-large';  // Add size property
+};
 
-const container = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.2,
-    },
-  },
-}
+const LeadershipMemberDisplay = ({ 
+  name, 
+  imageUrl,
+  sectionColor = '#3b82f6',
+  size = 'normal'  // Default to normal size
+}: LeadershipMemberDisplayProps) => {
+  // Determine the size classes based on the size prop
+  const getSizeClasses = () => {
+    switch (size) {
+      case 'extra-large':
+        return "max-w-[200px] border-4";
+      case 'large':
+        return "max-w-[160px] border-3";
+      case 'normal':
+      default:
+        return "max-w-[120px] border-2";
+    }
+  };
 
-const memberVariant = {
-  hidden: {
-    opacity: 0,
-    y: 20,
-  },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.5,
-      ease: "easeOut",
-    },
-  },
-  hover: {
-    y: -5,
-    transition: {
-      duration: 0.2,
-    },
-  },
-}
+  // Get font size class for the fallback initial
+  const getInitialFontSize = () => {
+    switch (size) {
+      case 'extra-large':
+        return "text-4xl";
+      case 'large':
+        return "text-3xl";
+      case 'normal':
+      default:
+        return "text-2xl";
+    }
+  };
 
-const LeadershipMemberDisplay: React.FC<TeamCardProps> = ({ teamName, teamColor, members }) => {
+  const sizeClasses = getSizeClasses();
+  const initialFontSize = getInitialFontSize();
+
   return (
-    <motion.div className="container mx-auto my-8" initial="hidden" animate="show" variants={container}>
-      <motion.h2
-        className={`text-6xl font-bold text-center mb-8 text-${teamColor}`}
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        {teamName}
-      </motion.h2>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-16">
-        {members.map((member, index) => (
-          <motion.div
-            key={index}
-            variants={memberVariant}
-            whileHover="hover"
-            className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 flex flex-col items-center"
-          >
-            <motion.div whileHover={{ scale: 1.1 }} transition={{ type: "spring", stiffness: 300 }}>
-              <Avatar className="w-20 h-20 mb-3">
-                <AvatarImage src={member.image} className="object-cover"/>
-                <AvatarFallback>{member.name}</AvatarFallback>
-              </Avatar>
-            </motion.div>
-            <p className="text-sm font-medium text-gray-900 dark:text-white text-center">{member.name}</p>
-          </motion.div>
-        ))}
+    <div className="text-center">
+      <div className={`relative mb-3 aspect-square overflow-hidden rounded-full shadow-md mx-auto ${sizeClasses}`}
+        style={{ borderColor: sectionColor }}>
+        {imageUrl ? (
+          <Image
+            src={imageUrl}
+            alt={name}
+            fill
+            className="object-cover"
+            sizes={size === 'extra-large' ? '200px' : size === 'large' ? '160px' : '120px'}
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center"
+               style={{ backgroundColor: sectionColor }}>
+            <span className={`text-white font-bold ${initialFontSize}`}>
+              {name.charAt(0)}
+            </span>
+          </div>
+        )}
       </div>
-    </motion.div>
-  )
-}
+      <p className={`font-medium text-gray-800 ${size === 'extra-large' ? 'text-xl' : size === 'large' ? 'text-lg' : 'text-base'}`}>
+        {name}
+      </p>
+    </div>
+  );
+};
 
-export default LeadershipMemberDisplay
+export default LeadershipMemberDisplay;
 
