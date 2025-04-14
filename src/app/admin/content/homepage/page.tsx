@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Plus, Upload, Trash2, Loader2, ImageIcon, PlusCircle, GripVertical } from "lucide-react";
+import { Plus, Upload, Trash2, Loader2, ImageIcon, PlusCircle, GripVertical, UserCircle } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
 import { 
@@ -91,8 +91,6 @@ export default function HomepageContentManagementPage() {
       console.error("Failed to fetch homepage content:", error);
       toast.error("Failed to load homepage content", {
         description: "There was an error loading the content. Please try refreshing the page.",
-        position: "top-center",
-        duration: 5000
       });
     } finally {
       setIsLoading(false);
@@ -151,8 +149,6 @@ export default function HomepageContentManagementPage() {
         console.error("Error processing image:", error);
         toast.error("Failed to process image", {
           description: "There was an error processing the selected image.",
-          position: "top-center",
-          duration: 5000
         });
       }
     }
@@ -303,8 +299,6 @@ export default function HomepageContentManagementPage() {
         console.error("Error processing staff image:", error);
         toast.error("Failed to process image", {
           description: "There was an error processing the selected image.",
-          position: "top-center",
-          duration: 5000
         });
       }
     }
@@ -333,8 +327,6 @@ export default function HomepageContentManagementPage() {
         console.error("Error processing leadership image:", error);
         toast.error("Failed to process image", {
           description: "There was an error processing the selected image.",
-          position: "top-center",
-          duration: 5000
         });
       }
     }
@@ -370,8 +362,6 @@ export default function HomepageContentManagementPage() {
       // Show success message - ensure toast is visible
       toast.success("Homepage content updated", {
         description: "Your changes have been saved successfully.",
-        position: "top-center",
-        duration: 3000
       });
       
       // Refresh the page content
@@ -381,8 +371,7 @@ export default function HomepageContentManagementPage() {
       console.error("Failed to save homepage content:", error);
       toast.error("Failed to save changes", {
         description: error instanceof Error ? error.message : "An unexpected error occurred",
-        position: "top-center",
-        duration: 5000
+
       });
     } finally {
       setIsSaving(false);
@@ -696,7 +685,6 @@ export default function HomepageContentManagementPage() {
             </Card>
           </TabsContent>
 
-          {/* FIXME  Backend integeration */}
           {/* Staff & Leadership Tab */}
           <TabsContent value="staff" className="space-y-6">
             <Card>
@@ -792,7 +780,7 @@ export default function HomepageContentManagementPage() {
                                 )}
                                 {!staff.image_url && (
                                   <div className="flex h-full w-full items-center justify-center">
-                                    <ImageIcon className="h-10 w-10 text-muted-foreground" />
+                                    <UserCircle className="h-10 w-10 text-muted-foreground" /> 
                                   </div>
                                 )}
                               </div>
@@ -941,7 +929,7 @@ export default function HomepageContentManagementPage() {
                                       <div className="space-y-2">
                                         <Label>Profile Image</Label>
                                         <div className="relative aspect-square w-full max-w-[150px] overflow-hidden rounded-lg border border-dashed">
-                                          <div className="relative h-full w-full bg-blue-900">
+                                          <div className="relative h-full w-full bg-muted"> 
                                             {member.image_url && (
                                               <Image 
                                                 src={member.image_url}
@@ -956,7 +944,7 @@ export default function HomepageContentManagementPage() {
                                             )}
                                             {!member.image_url && (
                                               <div className="flex h-full w-full items-center justify-center">
-                                                <ImageIcon className="h-8 w-8 text-white opacity-50" />
+                                                <UserCircle className="h-8 w-8 text-muted-foreground" /> 
                                               </div>
                                             )}
                                           </div>

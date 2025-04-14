@@ -11,7 +11,7 @@ export default function AdminLayout({
   return (
     <SessionProvider>
       <div className="min-h-screen bg-gray-50">
-        <Toaster />
+        <Toaster position="bottom-right" />
         {children}
       </div>
     </SessionProvider>

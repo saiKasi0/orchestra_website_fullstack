@@ -47,47 +47,54 @@ const LeadershipCards = ({ data }: LeadershipCardsProps) => {
       return `${baseColumns} md:grid-cols-4 lg:grid-cols-4 max-w-5xl mx-auto`;
     } else {
       // Default grid for 5+ members
-      return `${baseColumns} md:grid-cols-4 lg:grid-cols-6`;
+      return `${baseColumns} md:grid-cols-4 lg:grid-cols-5`;
     }
   };
 
   return (
     <div className="space-y-16">
-      {data.map((section) => (
-        <div key={section.id} className="space-y-6">
-          <div className="space-y-2 text-center">
-            <h3 
-              className="text-2xl font-semibold"
-              style={{ color: section.color || '#3b82f6' }}
-            >
-              {section.name}
-            </h3>
-            <div 
-              className="h-1 w-24 mx-auto rounded" 
-              style={{ backgroundColor: section.color || '#3b82f6' }}
-            ></div>
-          </div>
+      {data.map((section) => {
+        // Sort members alphabetically by name
+        const sortedMembers = [...section.members].sort((a, b) => 
+          a.name.localeCompare(b.name)
+        );
+        
+        return (
+          <div key={section.id} className="space-y-6">
+            <div className="space-y-2 text-center">
+              <h3 
+                className="text-2xl font-semibold"
+                style={{ color: section.color || '#3b82f6' }}
+              >
+                {section.name}
+              </h3>
+              <div 
+                className="h-1 w-24 mx-auto rounded" 
+                style={{ backgroundColor: section.color || '#3b82f6' }}
+              ></div>
+            </div>
 
-          <motion.div
-            className={`grid ${getGridCols(section.members.length)} gap-6`}
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-          >
-            {section.members.map((member) => (
-              <motion.div key={member.id} variants={fadeIn}>
-                <LeadershipMemberDisplay 
-                  name={member.name} 
-                  imageUrl={member.image_url}
-                  sectionColor={section.color || '#3b82f6'} 
-                  size={section.members.length === 1 ? 'extra-large' : section.members.length <= 3 ? 'large' : 'normal'}
-                />
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      ))}
+            <motion.div
+              className={`grid ${getGridCols(sortedMembers.length)} gap-6`}
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-50px" }}
+            >
+              {sortedMembers.map((member) => (
+                <motion.div key={member.id} variants={fadeIn}>
+                  <LeadershipMemberDisplay 
+                    name={member.name} 
+                    imageUrl={member.image_url}
+                    sectionColor={section.color || '#3b82f6'} 
+                    size={sortedMembers.length === 1 ? 'extra-large' : sortedMembers.length <= 3 ? 'large' : 'normal'}
+                  />
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        );
+      })}
     </div>
   );
 };

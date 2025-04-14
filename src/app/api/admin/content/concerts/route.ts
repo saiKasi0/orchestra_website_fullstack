@@ -5,7 +5,6 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import { concertsContentSchema } from "@/types/concerts";
 import { v4 as uuidv4 } from "uuid";
 
-
 // GET endpoint for concerts content
 export async function GET() {
   try {
@@ -13,7 +12,7 @@ export async function GET() {
     
     // Query concert content
     const { data: concertData, error: concertError } = await supabase
-      .from('concerts')
+      .from('concert_page_content')
       .select('*')
       .single();
       
@@ -24,8 +23,7 @@ export async function GET() {
       if (concertError.code === 'PGRST116') {
         return NextResponse.json({ 
           content: {
-            id: uuidv4(),
-            concert_name: "Fall",
+            concert_name: "",
             poster_image_url: "",
             no_concert_text: "No concert order is available at this time. Please check back later.",
             orchestras: []
@@ -51,7 +49,7 @@ export async function GET() {
     const orchestrasWithSongs = await Promise.all(
       orchestraGroups.map(async (orchestra) => {
         const { data: songs, error: songsError } = await supabase
-          .from('performance_songs')
+          .from('songs')  
           .select('song_title')
           .eq('group_id', orchestra.group_id)
           .order('order_number', { ascending: true });
@@ -106,9 +104,10 @@ export async function PUT(req: Request) {
     // Parse and validate request body
     const body = await req.json();
     
-    // Perform validation
+    // Perform validation with improved error handling
     const result = concertsContentSchema.safeParse(body);
     if (!result.success) {
+      console.error("Validation error:", result.error.format());
       return NextResponse.json({ 
         error: "Validation error", 
         details: result.error.format() 
@@ -116,11 +115,9 @@ export async function PUT(req: Request) {
     }
     
     const content = result.data;
-    
-    // Create Supabase client
     const supabase = createClient();
     
-    // Handle poster image upload if it's a base64 string
+    // Process poster image if it's a base64 string
     if (content.poster_image_url && content.poster_image_url.startsWith('data:image')) {
       try {
         // Extract base64 data and file type
@@ -133,8 +130,6 @@ export async function PUT(req: Request) {
         
         const imageType = matches[1];
         const base64Data = matches[2];
-        
-        // Convert base64 to binary
         const binaryData = Buffer.from(base64Data, 'base64');
         
         // Generate unique filename
@@ -161,7 +156,6 @@ export async function PUT(req: Request) {
           .from('concert-images')
           .getPublicUrl(filePath);
         
-        // Update the image URL to the stored version
         content.poster_image_url = urlData.publicUrl;
         
       } catch (error) {
@@ -170,38 +164,59 @@ export async function PUT(req: Request) {
       }
     }
     
-    // Update concert data in concerts table
-    const { error: updateError } = await supabase
-      .from('concerts')
-      .update({
-        concert_name: content.concert_name,
-        poster_image_url: content.poster_image_url,
-        no_concert_text: content.no_concert_text,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', content.id);
+    // Check if the record exists first
+    const { data: existingRecord, error: checkError } = await supabase
+      .from('concert_page_content')
+      .select('id')
+      .eq('id', 1)
+      .single();
+      
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error("Error checking for existing concert record:", checkError);
+      return NextResponse.json({ error: "Failed to check existing concert data" }, { status: 500 });
+    }
     
-    // If no record exists, create one
-    if (updateError && updateError.code === 'PGRST116') {
+    // Update or insert based on whether the record exists
+    if (existingRecord) {
+      // Update existing record
+      const { error: updateError } = await supabase
+        .from('concert_page_content')
+        .update({
+          concert_name: content.concert_name,
+          poster_image_url: content.poster_image_url,
+          no_concert_text: content.no_concert_text,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', 1);
+        
+      if (updateError) {
+        console.error("Error updating concert data:", updateError);
+        return NextResponse.json({ 
+          error: "Failed to update concert data", 
+          message: updateError.message 
+        }, { status: 500 });
+      }
+    } else {
+      // Insert new record - don't specify ID to let DB auto-generate it
       const { error: insertError } = await supabase
-        .from('concerts')
+        .from('concert_page_content')
         .insert({
           concert_name: content.concert_name,
           poster_image_url: content.poster_image_url,
           no_concert_text: content.no_concert_text
+          // Don't need to specify id, created_at, or updated_at - DB will handle these
         });
         
       if (insertError) {
         console.error("Error creating concert record:", insertError);
-        return NextResponse.json({ error: "Failed to create concert record" }, { status: 500 });
+        return NextResponse.json({ 
+          error: "Failed to create concert record", 
+          message: insertError.message 
+        }, { status: 500 });
       }
-    } else if (updateError) {
-      console.error("Error updating concert data:", updateError);
-      return NextResponse.json({ error: "Failed to update concert data" }, { status: 500 });
     }
     
-    // Handle orchestra groups and songs
-    // First, get all existing group IDs
+    // Handle orchestra groups - get existing groups
     const { data: existingGroups, error: getGroupsError } = await supabase
       .from('orchestra_groups')
       .select('group_id');
@@ -211,14 +226,15 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Failed to update orchestra groups" }, { status: 500 });
     }
     
-    // Get list of group IDs that should be kept
+    // Determine which groups to keep vs. delete
     const newGroupIds = content.orchestras.map(orchestra => orchestra.id);
-    
-    // Delete groups that are not in the new list
     const groupIdsToDelete = existingGroups
-      ? existingGroups.filter(group => !newGroupIds.includes(group.group_id)).map(group => group.group_id)
+      ? existingGroups
+          .filter(group => !newGroupIds.includes(group.group_id))
+          .map(group => group.group_id)
       : [];
       
+    // Delete removed orchestra groups
     if (groupIdsToDelete.length > 0) {
       const { error: deleteGroupsError } = await supabase
         .from('orchestra_groups')
@@ -247,12 +263,15 @@ export async function PUT(req: Request) {
         
       if (upsertGroupError) {
         console.error(`Error upserting orchestra group ${orchestra.id}:`, upsertGroupError);
-        return NextResponse.json({ error: "Failed to update orchestra groups" }, { status: 500 });
+        return NextResponse.json({ 
+          error: "Failed to update orchestra groups",
+          message: upsertGroupError.message
+        }, { status: 500 });
       }
       
       // Delete existing songs for this group
       const { error: deleteSongsError } = await supabase
-        .from('performance_songs')
+        .from('songs')
         .delete()
         .eq('group_id', orchestra.id);
         
@@ -265,17 +284,20 @@ export async function PUT(req: Request) {
       if (orchestra.songs.length > 0) {
         const songsToInsert = orchestra.songs.map((song, songIndex) => ({
           group_id: orchestra.id,
-          song_title: song,
+          song_title: song || "Untitled",
           order_number: songIndex
         }));
         
         const { error: insertSongsError } = await supabase
-          .from('performance_songs')
+          .from('songs')
           .insert(songsToInsert);
           
         if (insertSongsError) {
           console.error(`Error inserting songs for group ${orchestra.id}:`, insertSongsError);
-          return NextResponse.json({ error: "Failed to update songs" }, { status: 500 });
+          return NextResponse.json({ 
+            error: "Failed to update songs", 
+            details: insertSongsError.message 
+          }, { status: 500 });
         }
       }
     }
@@ -284,7 +306,7 @@ export async function PUT(req: Request) {
     console.info(`Concerts content updated by ${session.user.email}`);
     
     return NextResponse.json({
-      message: "Concerts content updated successfully"
+      message: "Concerts content updated successfully",
     });
     
   } catch (error) {

@@ -225,7 +225,7 @@ export default function AwardsContentManagement() {
     <div className="container px-4 py-6 mx-auto max-w-7xl">
 
       <div className="mb-6">
-      <Breadcrumb className="mb-6">
+        <Breadcrumb className="mb-6">
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink href="/admin/dashboard">Dashboard</BreadcrumbLink>

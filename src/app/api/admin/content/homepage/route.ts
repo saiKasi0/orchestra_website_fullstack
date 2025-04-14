@@ -327,7 +327,7 @@ export async function PUT(req: Request) {
         stats_years: content.stats_years,
         staff_leadership_title: content.staff_leadership_title,
       })
-      .eq('id', 1); // Assuming there's only one homepage content record
+      .eq('id', 1);
     
     if (updateError) {
       console.error("Error updating homepage content:", updateError);

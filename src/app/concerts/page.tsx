@@ -69,12 +69,6 @@ const ConcertOrder: React.FC<ConcertOrderProps> = ({ concertName, orchestras }) 
         >
           {concertName} Concert Order
         </motion.h1>
-        <motion.p
-          className="mb-8 text-lg font-normal text-gray-500 dark:text-gray-400 lg:text-xl"
-          variants={itemVariants}
-        >
-          This was our last concert order, next concert coming soon!
-        </motion.p>
         <div className="xxl:grid-cols-3 grid grid-cols-1 gap-8 md:grid-cols-1 lg:grid-cols-2">
           {orchestras.map((orchestra, index) => (
             <motion.div
@@ -85,7 +79,7 @@ const ConcertOrder: React.FC<ConcertOrderProps> = ({ concertName, orchestras }) 
               <h2 className="mb-4 text-2xl font-semibold text-gray-900 dark:text-white">
                 {index + 1}. {orchestra.name}
               </h2>
-              <ul className="list-inside list-disc text-gray-700 dark:text-gray-300">
+              <ul className="list-inside list-decimal text-gray-700 dark:text-gray-300">
                 {orchestra.songs.map((song, songIndex) => (
                   <li key={songIndex}>{song}</li>
                 ))}

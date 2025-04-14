@@ -18,6 +18,8 @@ import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { ConcertsContent } from "@/types/concerts";
 import Image from "next/image";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+
 
 interface Orchestra {
   id: string;
@@ -70,8 +72,6 @@ export default function ConcertContentManagement() {
         console.error("Failed to fetch concert content:", error);
         toast.error("Failed to load concert content", {
           description: "There was an error loading the content. Please try refreshing the page.",
-          position: "top-center",
-          duration: 5000
         });
       } finally {
         setIsLoading(false);
@@ -119,8 +119,6 @@ export default function ConcertContentManagement() {
         console.error("Error processing image:", error);
         toast.error("Failed to process image", {
           description: "There was an error processing the selected image.",
-          position: "top-center",
-          duration: 5000
         });
       }
     }
@@ -152,7 +150,7 @@ export default function ConcertContentManagement() {
   // Add a new song to an orchestra
   const addSong = (orchestraIndex: number) => {
     const newOrchestras = [...orchestras];
-    newOrchestras[orchestraIndex].songs.push("");
+    newOrchestras[orchestraIndex].songs.push("New Song");
     setOrchestras(newOrchestras);
   }; 
 
@@ -162,6 +160,27 @@ export default function ConcertContentManagement() {
     newOrchestras[orchestraIndex].songs.splice(songIndex, 1);
     setOrchestras(newOrchestras);
   };     
+
+  // Move a song up in the order within its orchestra group
+  const moveSongUp = (orchestraIndex: number, songIndex: number) => {
+    if (songIndex <= 0) return; // Already at the top
+    const newOrchestras = [...orchestras];
+    // Swap with the previous song
+    [newOrchestras[orchestraIndex].songs[songIndex - 1], newOrchestras[orchestraIndex].songs[songIndex]] = 
+      [newOrchestras[orchestraIndex].songs[songIndex], newOrchestras[orchestraIndex].songs[songIndex - 1]];
+    setOrchestras(newOrchestras);
+  };
+
+  // Move a song down in the order within its orchestra group
+  const moveSongDown = (orchestraIndex: number, songIndex: number) => {
+    const songsLength = orchestras[orchestraIndex].songs.length;
+    if (songIndex >= songsLength - 1) return; // Already at the bottom
+    const newOrchestras = [...orchestras];
+    // Swap with the next song
+    [newOrchestras[orchestraIndex].songs[songIndex], newOrchestras[orchestraIndex].songs[songIndex + 1]] = 
+      [newOrchestras[orchestraIndex].songs[songIndex + 1], newOrchestras[orchestraIndex].songs[songIndex]];
+    setOrchestras(newOrchestras);
+  };
 
   // Add a new orchestra group
   const addOrchestraGroup = () => {
@@ -175,16 +194,42 @@ export default function ConcertContentManagement() {
     setOrchestras(newOrchestras);
   };
 
+  // Move an orchestra group up in the order
+  const moveOrchestraUp = (index: number) => {
+    if (index <= 0) return; // Already at the top
+    const newOrchestras = [...orchestras];
+    // Swap with the previous item
+    [newOrchestras[index - 1], newOrchestras[index]] = [newOrchestras[index], newOrchestras[index - 1]];
+    setOrchestras(newOrchestras);
+  };
+
+  // Move an orchestra group down in the order
+  const moveOrchestraDown = (index: number) => {
+    if (index >= orchestras.length - 1) return; // Already at the bottom
+    const newOrchestras = [...orchestras];
+    // Swap with the next item
+    [newOrchestras[index], newOrchestras[index + 1]] = [newOrchestras[index + 1], newOrchestras[index]];
+    setOrchestras(newOrchestras);
+  };
+
   // Save changes
   const saveChanges = async () => {
     setIsSaving(true);
+    
     try {
+      // Validate data before sending
+      const validOrchestras = orchestras.map(orchestra => ({
+        ...orchestra,
+        songs: orchestra.songs.map(song => song.trim() || "Untitled") // Ensure no empty strings
+      }));
+      
       const payload: ConcertsContent = {
-        id: contentId,
-        concert_name: concertName,
+        // Convert to number if it's a string ID, or omit for new entries
+        id: contentId ? Number(contentId) : undefined,
+        concert_name: concertName || "Untitled Concert",
         poster_image_url: posterImageUrl,
-        no_concert_text: noConcertText, // Add the no concert text to the payload
-        orchestras: orchestras
+        no_concert_text: noConcertText,
+        orchestras: validOrchestras
       };
       
       const response = await fetch('/api/admin/content/concerts', {
@@ -224,6 +269,23 @@ export default function ConcertContentManagement() {
 
   return (
     <div className="container mx-auto py-10">
+      <div className="mb-6">
+        <Breadcrumb className="mb-6">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/admin/dashboard">Dashboard</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/admin/content">Content</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/admin/content/concerts">Concerts</BreadcrumbLink>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Concert Content Management</CardTitle>
@@ -246,7 +308,6 @@ export default function ConcertContentManagement() {
         <TabsList className="mb-4">
           <TabsTrigger value="general">General Settings</TabsTrigger>
           <TabsTrigger value="orchestras">Orchestra Groups</TabsTrigger>
-          <TabsTrigger value="preview">Preview</TabsTrigger>
         </TabsList>
 
         {/* General Settings Tab */}
@@ -265,7 +326,7 @@ export default function ConcertContentManagement() {
                   id="concertName"
                   value={concertName}
                   onChange={(e) => setConcertName(e.target.value)}
-                  placeholder="e.g. Fall, Winter, Spring"
+                  placeholder="e.g. Fall, Winter, Spring, Senior"
                 />
               </div>
               
@@ -368,9 +429,37 @@ export default function ConcertContentManagement() {
                   >
                     <div className="flex justify-between items-center mb-4">
                       <div className="w-full">
-                        <Label htmlFor={`orchestra-${orchestraIndex}`}>
-                          Orchestra Name
-                        </Label>
+                        <div className="flex justify-between items-center mb-2">
+                          <Label htmlFor={`orchestra-${orchestraIndex}`}>
+                            Orchestra Name
+                          </Label>
+                          <div className="flex gap-1">
+                            <Button 
+                              variant="outline" 
+                              size="icon" 
+                              onClick={() => moveOrchestraUp(orchestraIndex)}
+                              disabled={orchestraIndex === 0}
+                              title="Move Up"
+                            >
+                              <span className="sr-only">Move Up</span>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                                <path d="m18 15-6-6-6 6"/>
+                              </svg>
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="icon" 
+                              onClick={() => moveOrchestraDown(orchestraIndex)}
+                              disabled={orchestraIndex === orchestras.length - 1}
+                              title="Move Down"
+                            >
+                              <span className="sr-only">Move Down</span>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                                <path d="m6 9 6 6 6-6"/>
+                              </svg>
+                            </Button>
+                          </div>
+                        </div>
                         <div className="flex gap-2">
                           <Input
                             id={`orchestra-${orchestraIndex}`}
@@ -393,20 +482,48 @@ export default function ConcertContentManagement() {
                     <div className="ml-4 space-y-2 mt-2">
                       {orchestra.songs.map((song, songIndex) => (
                         <div key={songIndex} className="flex gap-2">
-                          <Input
-                            value={song}
-                            onChange={(e) =>
-                              handleSongChange(orchestraIndex, songIndex, e.target.value)
-                            }
-                            placeholder="Enter song title"
-                          />
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
-                            onClick={() => removeSong(orchestraIndex, songIndex)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex-1">
+                            <Input
+                              value={song}
+                              onChange={(e) =>
+                                handleSongChange(orchestraIndex, songIndex, e.target.value)
+                              }
+                              placeholder="Enter song title"
+                            />
+                          </div>
+                          <div className="flex gap-1">
+                            <Button 
+                              variant="outline" 
+                              size="icon" 
+                              onClick={() => moveSongUp(orchestraIndex, songIndex)}
+                              disabled={songIndex === 0}
+                              title="Move Song Up"
+                            >
+                              <span className="sr-only">Move Song Up</span>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                                <path d="m18 15-6-6-6 6"/>
+                              </svg>
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="icon" 
+                              onClick={() => moveSongDown(orchestraIndex, songIndex)}
+                              disabled={songIndex === orchestra.songs.length - 1}
+                              title="Move Song Down"
+                            >
+                              <span className="sr-only">Move Song Down</span>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                                <path d="m6 9 6 6 6-6"/>
+                              </svg>
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="icon" 
+                              onClick={() => removeSong(orchestraIndex, songIndex)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       ))}
                       <Button 
@@ -443,61 +560,6 @@ export default function ConcertContentManagement() {
           </Card>
         </TabsContent>
 
-        {/* Preview Tab */}
-        <TabsContent value="preview">
-          <Card>
-            <CardHeader>
-              <CardTitle>Concert Order Preview</CardTitle>
-              <CardDescription>
-                Preview how the concert order will appear on the public page.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="p-6 border rounded-lg bg-gray-50">
-                <div className="flex flex-col md:flex-row gap-8">
-                  {(posterImagePreview || posterImageUrl) && (
-                    <div className="md:w-1/3 lg:w-1/4">
-                      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg shadow-md">
-                        <Image 
-                          src={posterImagePreview || posterImageUrl}
-                          alt="Concert Poster"
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                    </div>
-                  )}
-                  <div className={`${(posterImagePreview || posterImageUrl) ? 'md:w-2/3 lg:w-3/4' : 'w-full'}`}>
-                    <h2 className="text-3xl font-bold mb-6">{concertName} Concert Order</h2>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      {orchestras.length > 0 ? (
-                        orchestras.map((orchestra, index) => (
-                          <div key={orchestra.id} className="bg-white p-4 rounded-lg shadow">
-                            <h3 className="text-xl font-semibold mb-2">
-                              {index + 1}. {orchestra.name}
-                            </h3>
-                            <ul className="list-disc list-inside">
-                              {orchestra.songs.map((song, songIndex) => (
-                                <li key={songIndex} className="text-gray-700">
-                                  {song}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="col-span-2 text-center py-8 text-gray-500">
-                          {/* Show the no concert text in the preview */}
-                          {noConcertText}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
     </div>
   );

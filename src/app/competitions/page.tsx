@@ -6,37 +6,6 @@ import { motion } from "framer-motion"
 import { JSX } from "react"
 import { CompetitionsContent, CompetitionSchema } from "@/types/competitions"
 
-// Fallback data in case the API fails
-const fallbackContent: CompetitionsContent = {
-  title: "Our Competitions",
-  description: "Cypress Ranch Orchestra participates in various prestigious competitions, showcasing our students' talents and dedication to musical excellence.",
-  competitions: [
-    {
-      id: "1",
-      name: "UIL Orchestra Competition",
-      description: "The UIL Orchestra Competition is a prestigious event for school orchestras across Texas, promoting excellence in music education and performance. As a state-level competition, it offers participants the chance to showcase their talents in front of esteemed judges.",
-      image: "/UILLogo.png",
-      categories: ["Full Orchestra", "String Orchestra", "Solo & Ensemble"],
-      additionalInfo: "Participation is by invitation only. Our orchestra has been invited for the past 5 consecutive years."
-    },
-    {
-      id: "2",
-      name: "TMEA Region & All-State Orchestra",
-      description: "The Region Orchestra competition is a congregation of top student musicians from our region to play in the Region Symphony and Philharmonic Orchestras. This competition challenges participants to excel in performances of challenging music.",
-      categories: ["Solo"],
-      additionalInfo: "Process: Region Level Auditions → Area Auditions → State Selection"
-    },
-    {
-      id: "3",
-      name: "National Orchestra Festival – ASTA",
-      description: "The National Orchestra Festival hosted by ASTA is an esteemed national competition that showcases some of the finest youth orchestras in the country. Our school orchestra is to proudly compete at this national level, facing the best from across the U.S.",
-      image: "/ASTALogo.png",
-      categories: ["String Orchestra"],
-      additionalInfo: "Location: National Event - Various Locations Annually"
-    }
-  ]
-}
-
 const CompetitionCard: React.FC<CompetitionSchema> = ({ name, description, image, categories, additionalInfo }) => {
   return (
     <motion.div
@@ -47,17 +16,20 @@ const CompetitionCard: React.FC<CompetitionSchema> = ({ name, description, image
     >
       <div className="p-6">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">{name}</h2>
+        
+        {/* Conditionally render the image block only if 'image' is truthy */}
         {image && (
-          <div className="mb-4">
+          <div className="mb-4 relative aspect-video w-full overflow-hidden rounded-md"> 
             <Image
-              src={image || "/placeholder.svg"}
+              src={image} // Use the image URL directly
               alt={name}
-              width={400}
-              height={200}
-              className="object-contain w-full"
+              fill // Use fill for responsive container
+              className="object-contain" // Ensure image covers the area
+              unoptimized={image.startsWith('data:image')} // Keep unoptimized for base64 if needed, though unlikely here
             />
           </div>
         )}
+        
         <p className="text-gray-600 mb-4">{description}</p>
         <div className="space-y-2">
           <h3 className="text-lg font-semibold text-gray-700">Categories:</h3>
@@ -131,18 +103,17 @@ export default function Competitions(): JSX.Element {
         const data = await response.json();
         
         // Check if we have valid content
-        if (data.content && data.content.competitions && data.content.competitions.length > 0) {
+        if (data.content && data.content.competitions) {
           setCompetitionData(data.content);
         } else {
-          // If the API returned empty content, use fallback
-          console.info("API returned empty competitions data, using fallback");
-          setCompetitionData(fallbackContent);
+          // If the API returned empty content, show an error
+          setError("No competition data available. Please contact the administrator.");
+          setCompetitionData(null);
         }
       } catch (err) {
         console.error("Error fetching competitions data:", err);
-        setError("Failed to load competitions data. Using fallback content.");
-        // Use fallback data when API call fails
-        setCompetitionData(fallbackContent);
+        setError("Failed to load competitions data. Please try again later.");
+        setCompetitionData(null);
       } finally {
         setIsLoading(false);
       }
@@ -151,9 +122,43 @@ export default function Competitions(): JSX.Element {
     fetchCompetitionsData();
   }, []);
 
-  // Extract title and description from competitionData or use fallback
-  const pageTitle = competitionData?.title || fallbackContent.title;
-  const pageDescription = competitionData?.description || fallbackContent.description;
+  if (isLoading) {
+    return (
+      <main className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          {/* Skeleton for Title */}
+          <div className="h-10 bg-gray-200 rounded-md w-1/2 mx-auto mb-8 animate-pulse"></div>
+          {/* Skeleton for Description */}
+          <div className="space-y-2 max-w-3xl mx-auto mb-12">
+            <div className="h-4 bg-gray-200 rounded-md w-full animate-pulse"></div>
+            <div className="h-4 bg-gray-200 rounded-md w-full animate-pulse"></div>
+          </div>
+          {/* Skeleton for Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[...Array(3)].map((_, index) => (
+              <SkeletonCompetitionCard key={index} />
+            ))}
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (error || !competitionData) {
+    return (
+      <main className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="flex flex-col items-center justify-center min-h-[40vh]">
+            <h1 className="text-4xl font-bold text-gray-800 mb-8">Competitions</h1>
+            <div className="bg-amber-50 border border-amber-200 rounded-md p-6 max-w-lg">
+              <h2 className="text-xl font-semibold text-amber-800 mb-2">Information Unavailable</h2>
+              <p className="text-amber-700">{error || "Unable to display competition information at this time."}</p>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -164,7 +169,7 @@ export default function Competitions(): JSX.Element {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          {pageTitle}
+          {competitionData.title}
         </motion.h1>
         <motion.p
           className="text-xl text-gray-600 mb-12 text-center max-w-3xl mx-auto"
@@ -172,26 +177,18 @@ export default function Competitions(): JSX.Element {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          {pageDescription}
+          {competitionData.description}
         </motion.p>
         
-        {isLoading ? (
+        {competitionData.competitions.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[...Array(3)].map((_, index) => (
-              <SkeletonCompetitionCard key={index} />
+            {competitionData.competitions.map((competition, index) => (
+              <CompetitionCard key={competition.id || index} {...competition} />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {competitionData?.competitions.map((competition, index) => (
-              <CompetitionCard key={index} {...competition} />
-            ))}
-          </div>
-        )}
-        
-        {error && (
-          <div className="text-center text-amber-600 mt-4 text-sm">
-            {error}
+          <div className="text-center py-12">
+            <p className="text-lg text-gray-500">No competitions are currently listed.</p>
           </div>
         )}
       </div>
