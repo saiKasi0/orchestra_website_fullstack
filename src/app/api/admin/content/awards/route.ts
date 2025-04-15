@@ -78,6 +78,89 @@ async function processBase64Image(base64String: string, requestId: string, supab
   }
 }
 
+// Helper function to delete an image from storage bucket
+async function deleteImageFromStorage(imageUrl: string, requestId: string, supabase: any): Promise<boolean> {
+  try {
+    // Check if it's a storage URL
+    if (!imageUrl.includes('storage')) {
+      console.log(`[${requestId}] Image URL is not from storage bucket, skipping deletion: ${imageUrl}`);
+      return true; // Not a storage URL, no need to delete
+    }
+    
+    // Try to extract the path from the URL using URL object for more reliable parsing
+    let storagePath = '';
+    try {
+      // Create URL object to parse the components
+      const url = new URL(imageUrl);
+      
+      // Get the pathname part of the URL
+      const pathname = url.pathname;
+      
+      // Log the pathname for debugging
+      console.log(`[${requestId}] Extracted pathname: ${pathname}`);
+      
+      // Check if pathname includes the bucket name and awards folder
+      if (pathname.includes('/achievement-images/')) {
+        // First try to extract the path after the bucket name
+        const pathMatch = pathname.match(/\/achievement-images\/(.*)/);
+        if (pathMatch && pathMatch[1]) {
+          storagePath = pathMatch[1];
+          console.log(`[${requestId}] Extracted storage path: ${storagePath}`);
+        }
+      }
+      
+      // If we couldn't extract a path, try another approach with split
+      if (!storagePath) {
+        const pathParts = pathname.split('/');
+        const bucketIndex = pathParts.findIndex(part => part === 'achievement-images');
+        
+        if (bucketIndex !== -1 && bucketIndex < pathParts.length - 1) {
+          // Join all parts after the bucket name
+          storagePath = pathParts.slice(bucketIndex + 1).join('/');
+          console.log(`[${requestId}] Extracted storage path using alternative method: ${storagePath}`);
+        }
+      }
+    } catch (parseError) {
+      console.error(`[${requestId}] Error parsing URL: ${parseError}`);
+      // Fall back to the original method if URL parsing fails
+      const urlParts = imageUrl.split('/achievement-images/');
+      if (urlParts.length === 2) {
+        storagePath = urlParts[1].split('?')[0]; // Remove any query parameters
+        console.log(`[${requestId}] Fallback extraction of storage path: ${storagePath}`);
+      }
+    }
+    
+    // Check if we have a valid storage path
+    if (!storagePath) {
+      console.error(`[${requestId}] Could not determine storage path from URL: ${imageUrl}`);
+      return false;
+    }
+    
+    // Make sure the path starts with 'awards/' if it doesn't already
+    if (!storagePath.startsWith('awards/')) {
+      storagePath = `awards/${storagePath}`;
+    }
+    
+    console.log(`[${requestId}] Deleting image from storage at path: ${storagePath}`);
+    
+    const { error } = await supabase
+      .storage
+      .from('achievement-images')
+      .remove([storagePath]);
+    
+    if (error) {
+      console.error(`[${requestId}] Error deleting image from storage:`, error);
+      return false;
+    }
+    
+    console.log(`[${requestId}] Successfully deleted image from storage: ${storagePath}`);
+    return true;
+  } catch (error) {
+    console.error(`[${requestId}] Unexpected error deleting image:`, error);
+    return false;
+  }
+}
+
 // GET endpoint for awards content
 export async function GET() {
   const requestId = uuidv4().substring(0, 8);
@@ -258,6 +341,32 @@ export async function PUT(req: Request) {
     
     const supabase = createClient();
     
+    // Fetch existing achievements to track images that might need to be deleted
+    console.log(`[${requestId}] Fetching existing achievements to check for images to delete`);
+    let imagesToDelete: string[] = [];
+    
+    if (content.id) {
+      const { data: existingAchievements, error: fetchError } = await supabase
+        .from('awards_achievements')
+        .select('imagesrc')
+        .eq('content_id', content.id);
+        
+      if (!fetchError && existingAchievements) {
+        // Get all existing image URLs
+        const existingImageUrls = existingAchievements.map(a => a.imagesrc).filter(Boolean);
+        
+        // Get all new image URLs that aren't base64 (these are existing URLs we're keeping)
+        const keepingImageUrls = content.achievements
+          .map(a => a.imageSrc)
+          .filter(url => url && !url.startsWith('data:image/'));
+        
+        // Images to delete are those in existingImageUrls but not in keepingImageUrls
+        imagesToDelete = existingImageUrls.filter(url => !keepingImageUrls.includes(url));
+        
+        console.log(`[${requestId}] Found ${imagesToDelete.length} images to delete from storage`);
+      }
+    }
+    
     // Process any base64 images before saving
     console.log(`[${requestId}] Processing achievement images`);
     for (let i = 0; i < content.achievements.length; i++) {
@@ -318,6 +427,14 @@ export async function PUT(req: Request) {
         contentId
       });
       return formatErrorResponse("Failed to delete existing achievements", deleteError, 500);
+    }
+    
+    // Now delete the unused images from storage
+    if (imagesToDelete.length > 0) {
+      console.log(`[${requestId}] Deleting ${imagesToDelete.length} unused images from storage`);
+      for (const imageUrl of imagesToDelete) {
+        await deleteImageFromStorage(imageUrl, requestId, supabase);
+      }
     }
     
     // If there are new achievements to add, insert them all at once

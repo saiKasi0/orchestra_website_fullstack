@@ -295,7 +295,7 @@ export default function AwardsContentManagement() {
     return validationErrors[fieldName]?.[0] || "";
   };
 
-  // Clear image preview - modified to handle revocation of object URLs
+  // Clear image preview - ensure we properly handle base64 and storage URLs
   const clearImagePreview = (index: number) => {
     const newAchievements = [...achievements];
     
@@ -306,10 +306,9 @@ export default function AwardsContentManagement() {
     
     newAchievements[index].imagePreview = null;
     
-    // If the image was a new upload (base64), also clear the image source
-    if (newAchievements[index].imageSrc.startsWith('data:image/')) {
-      newAchievements[index].imageSrc = '';
-    }
+    // If the image was a new upload (base64) or an existing URL, clear it
+    // The API will handle deleting the file from storage if needed
+    newAchievements[index].imageSrc = '';
     
     setAchievements(newAchievements);
   };
