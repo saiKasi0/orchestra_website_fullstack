@@ -18,11 +18,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TripsContent, GalleryImage, FeatureItem } from "@/types/trips";
 
 // Sortable gallery item component
 const SortableGalleryItem = ({ id, src, index, onDelete }: { id: string; src: string; index: number; onDelete: () => void }) => {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
-  
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -30,9 +31,25 @@ const SortableGalleryItem = ({ id, src, index, onDelete }: { id: string; src: st
 
   return (
     <div ref={setNodeRef} style={style} className="relative">
-      <div 
-        className="border rounded-lg overflow-hidden cursor-move bg-white" 
-        {...attributes} 
+      {/* Delete button positioned absolutely on top right, outside of drag handle area */}
+      <Button
+        variant="destructive"
+        size="icon"
+        className="absolute -top-2 -right-2 h-7 w-7 rounded-full z-10 shadow-md"
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          onDelete();
+        }}
+        type="button"
+      >
+        <Trash2 className="h-3 w-3" />
+        <span className="sr-only">Delete image</span>
+      </Button>
+
+      <div
+        className="border rounded-lg overflow-hidden cursor-move bg-white"
+        {...attributes}
         {...listeners}
       >
         <div className="relative aspect-[16/9] w-full">
@@ -43,22 +60,11 @@ const SortableGalleryItem = ({ id, src, index, onDelete }: { id: string; src: st
             className="object-cover"
           />
         </div>
-        <div className="p-2 flex justify-between items-center bg-white border-t">
+        <div className="p-2 flex items-center bg-white border-t">
           <div className="flex items-center">
             <GripVertical className="h-4 w-4 text-muted-foreground mr-2" />
             <span className="text-sm">Image {index + 1}</span>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-destructive"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
         </div>
       </div>
     </div>
@@ -69,214 +75,193 @@ export default function TripsContentManagement() {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // State for page content
+
   const [content, setContent] = useState({
-    pageTitle: "Orchestra Trips & Socials",
-    pageSubtitle: "Explore our adventures and memorable moments",
-    quote: "Thank you to everyone who makes these moments unforgettable. We're excited for the upcoming socials and journeys this year. Stay tuned for announcements on our next adventure!"
+    pageTitle: "",
+    pageSubtitle: "",
+    quote: ""
   });
-  
-  // State for gallery images
-  const [galleryImages, setGalleryImages] = useState([
-    { id: "img1", src: "/CypressRanchOrchestraInstagramPhotos/CocoSocial.jpg" },
-    { id: "img2", src: "/CypressRanchOrchestraInstagramPhotos/HoustonSymphonyMargianos.jpg" },
-    { id: "img3", src: "/CypressRanchOrchestraInstagramPhotos/HoustonSymphony.jpg" },
-    { id: "img4", src: "/CypressRanchOrchestraInstagramPhotos/HoustonSymphonyTripArcade.jpg" },
-    { id: "img5", src: "/CypressRanchOrchestraInstagramPhotos/Disney2023.jpg" },
-  ]);
-  
-  // Content ID from the database (if it exists)
-  const [contentId, setContentId] = useState<string | null>(null);
-  
-  // State for new image upload
+
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+  const [contentId, setContentId] = useState<number | null>(null);
   const [newImagePreview, setNewImagePreview] = useState<string | null>(null);
-  
-  // State for feature items
-  const [featureItems, setFeatureItems] = useState([
-    {
-      id: "feature1",
-      icon: "MusicNote",
-      title: "More Than Just Music",
-      description: "Being part of our orchestra is about creating beautiful music and forming lasting friendships. We believe that the bonds formed off-stage are just as important as the harmony we create on-stage."
-    },
-    {
-      id: "feature2",
-      icon: "MapPin",
-      title: "Exciting Adventures",
-      description: "From weekend retreats to city trips, each event is a chance to unwind, explore, and connect in new ways. We've explored museums, attended professional concerts, and even had fun at theme parks!"
-    },
-    {
-      id: "feature3",
-      icon: "Users",
-      title: "Unforgettable Moments",
-      description: "These experiences bring us together, whether it's sightseeing, enjoying group dinners, or simply having fun. The memories we create during these trips last a lifetime and strengthen our musical connection."
-    }
-  ]);
-  
-  // Fetch initial data
+  const [featureItems, setFeatureItems] = useState<FeatureItem[]>([]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
         const response = await fetch('/api/admin/content/trips');
-        
+
         if (!response.ok) {
           throw new Error(`Failed to fetch trips content: ${response.statusText}`);
         }
-        
+
         const data = await response.json();
-        
-        if (data.content) {
-          setContentId(data.content.id || null);
-          
-          // Set page content
+        const fetchedContent: TripsContent | null = data.content;
+
+        if (fetchedContent && fetchedContent.id) {
+          setContentId(fetchedContent.id);
+
           setContent({
-            pageTitle: data.content.page_title || "Orchestra Trips & Socials",
-            pageSubtitle: data.content.page_subtitle || "Explore our adventures and memorable moments",
-            quote: data.content.quote || ""
+            pageTitle: fetchedContent.page_title || "",
+            pageSubtitle: fetchedContent.page_subtitle || "",
+            quote: fetchedContent.quote || ""
           });
-          
-          // Set gallery images
-          if (data.content.gallery_images && Array.isArray(data.content.gallery_images)) {
-            interface ApiGalleryImage {
-              id: string;
-              src: string;
-            }
-            
-            setGalleryImages(data.content.gallery_images.map((img: ApiGalleryImage) => ({
-              id: img.id,
-              src: img.src
-            })));
-          }
-          
-          // Set feature items
-          if (data.content.feature_items && Array.isArray(data.content.feature_items)) {
-            interface ApiFeatureItem {
-              id: string;
-              icon: string;
-              title: string;
-              description: string;
-            }
-            
-            setFeatureItems(data.content.feature_items.map((item: ApiFeatureItem) => ({
-              id: item.id,
-              icon: item.icon,
-              title: item.title,
-              description: item.description
-            })));
-          }
+
+          setGalleryImages(fetchedContent.gallery_images || []);
+          setFeatureItems(fetchedContent.feature_items || []);
+        } else {
+          setContentId(1);
+          setContent({ pageTitle: "", pageSubtitle: "", quote: "" });
+          setGalleryImages([]);
+          setFeatureItems([]);
         }
       } catch (error) {
         console.error("Error fetching trips content:", error);
         toast.error("Failed to load trips content. Please try again.");
+        setContentId(1);
+        setContent({ pageTitle: "", pageSubtitle: "", quote: "" });
+        setGalleryImages([]);
+        setFeatureItems([]);
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     fetchData();
   }, []);
-  
-  // DnD sensors setup
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
-  
-  // Handle image upload
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Create a preview URL for the image
-      const url = URL.createObjectURL(file);
-      setNewImagePreview(url);
-      
-      // TODO: In a full implementation, we would upload the image to storage
-      // and get the actual URL back from the server
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
-  
-  // Add the image to gallery
+
   const addImageToGallery = () => {
     if (newImagePreview) {
-      const newId = `img${Date.now()}`;
+      const newId = `temp-${Date.now()}`;
       setGalleryImages([...galleryImages, {
         id: newId,
         src: newImagePreview
       }]);
       setNewImagePreview(null);
+
+      const fileInput = document.getElementById('new-gallery-image') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+
+      toast.info("Image added to the list. Remember to save changes.");
     }
   };
-  
-  // Handle image reordering
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    
-    if (active.id !== over?.id) {
+
+    const activeId = active.id as string;
+    const overId = over?.id as string | undefined;
+
+    if (overId && activeId !== overId) {
       setGalleryImages((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over?.id);
-        
+        const oldIndex = items.findIndex((item) => String(item.id) === activeId);
+        const newIndex = items.findIndex((item) => String(item.id) === overId);
+
+        if (oldIndex === -1 || newIndex === -1) return items;
+
         return arrayMove(items, oldIndex, newIndex);
       });
     }
   };
-  
-  // Remove image from gallery
-  const removeImage = (id: string) => {
-    setGalleryImages(galleryImages.filter(img => img.id !== id));
+
+  const removeImage = (idToRemove: number | string) => {
+    console.log(`Removing image with ID: ${idToRemove}, type: ${typeof idToRemove}`);
+    
+    // Debug current images
+    console.log("Current images:", galleryImages.map(img => ({ id: img.id, type: typeof img.id })));
+    
+    // Convert ID to string for consistent comparison
+    const idToRemoveStr = String(idToRemove);
+    
+    setGalleryImages(prevImages => {
+      const newImages = prevImages.filter(img => String(img.id) !== idToRemoveStr);
+      console.log(`Filtered from ${prevImages.length} to ${newImages.length} images`);
+      return newImages;
+    });
+    
+    toast.info("Image removed. Remember to save changes.");
   };
-  
-  // Handle content text changes
+
   const handleContentChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setContent(prev => ({ ...prev, [name]: value }));
   };
-  
-  // Handle feature item changes
-  const handleFeatureItemChange = (index: number, field: string, value: string) => {
+
+  const handleFeatureItemChange = (index: number, field: keyof FeatureItem, value: string) => {
     const newFeatureItems = [...featureItems];
-    // @ts-expect-error - We know these fields exist
-    newFeatureItems[index][field] = value;
-    setFeatureItems(newFeatureItems);
+    if (newFeatureItems[index]) {
+      newFeatureItems[index] = { ...newFeatureItems[index], [field]: value };
+      setFeatureItems(newFeatureItems);
+    }
   };
-  
-  // Change feature icon
+
   const handleIconChange = (index: number, iconName: string) => {
     const newFeatureItems = [...featureItems];
-    newFeatureItems[index].icon = iconName;
-    setFeatureItems(newFeatureItems);
+    if (newFeatureItems[index]) {
+      newFeatureItems[index] = { ...newFeatureItems[index], icon: iconName as FeatureItem['icon'] };
+      setFeatureItems(newFeatureItems);
+    }
   };
-  
-  // Save function to update content
+
+  const addFeatureItem = () => {
+    setFeatureItems([
+      ...featureItems,
+      {
+        id: `temp-feature-${Date.now()}`,
+        icon: "MusicNote",
+        title: "New Feature Title",
+        description: "Enter feature description here."
+      }
+    ]);
+    toast.info("New feature item added. Edit its content and save changes.");
+  };
+
+  const removeFeatureItem = (idToRemove: number | string) => {
+    setFeatureItems(featureItems.filter(item => item.id !== idToRemove));
+    toast.info("Feature item removed. Remember to save changes.");
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
-    
+
     try {
-      // Prepare the data for submission
       const formData = {
-        id: contentId,
+        id: 1,
         page_title: content.pageTitle,
         page_subtitle: content.pageSubtitle,
         quote: content.quote,
         gallery_images: galleryImages.map((img, index) => ({
-          id: img.id,
           src: img.src,
-          order_number: index + 1
+          order_number: index
         })),
         feature_items: featureItems.map((item, index) => ({
-          id: item.id,
-          icon: item.icon,
+          icon: item.icon as FeatureItem['icon'],
           title: item.title,
           description: item.description,
-          order_number: index + 1
+          order_number: index
         }))
       };
-      
-      // Submit the data
+
       const response = await fetch('/api/admin/content/trips', {
         method: 'PUT',
         headers: {
@@ -284,22 +269,29 @@ export default function TripsContentManagement() {
         },
         body: JSON.stringify(formData),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to save trips content');
       }
-      
+
       const data = await response.json();
-      
-      // Update the content ID if we got one back
-      if (data.contentId) {
-        setContentId(data.contentId);
+
+      setContentId(data.contentId);
+
+      const refetchResponse = await fetch('/api/admin/content/trips');
+      if (refetchResponse.ok) {
+        const refetchedData = await refetchResponse.json();
+        if (refetchedData.content) {
+          setGalleryImages(refetchedData.content.gallery_images || []);
+          setFeatureItems(refetchedData.content.feature_items || []);
+        }
+      } else {
+        console.error("Failed to refetch content after saving.");
+        toast.warning("Content saved, but failed to refresh updated image URLs/IDs. Please reload the page.");
       }
-      
-      // Show success message
+
       toast.success("Trips content has been saved successfully.");
-      
     } catch (error) {
       console.error('Error saving trips content:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to save trips content');
@@ -316,7 +308,7 @@ export default function TripsContentManagement() {
       </div>
     );
   }
-  
+
   return (
     <div className="container px-4 py-6 mx-auto max-w-7xl">
       <Breadcrumb className="mb-6">
@@ -334,17 +326,17 @@ export default function TripsContentManagement() {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      
+
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Trips & Socials Content Management</CardTitle>
           <CardDescription>
-            Update the content of the Trips & Socials page. Changes will be reflected on the live site. This website is intended to be used on a desktop device. 
+            Update the content of the Trips & Socials page. Changes will be reflected on the live site.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-sm text-muted-foreground bg-muted p-4 rounded-lg">
-            <h3 className="font-medium mb-2">Currently Published Content</h3>
+            <h3 className="font-medium mb-2">Currently Published Content (ID: {contentId ?? 'N/A'})</h3>
             <p>Page Title: <span className="font-mono">{content.pageTitle || "(empty)"}</span></p>
             <p>Subtitle: <span className="font-mono">{content.pageSubtitle || "(empty)"}</span></p>
             <p>Quote: <span className="font-mono">{content.quote ? `${content.quote.substring(0, 50)}${content.quote.length > 50 ? '...' : ''}` : "(empty)"}</span></p>
@@ -353,15 +345,14 @@ export default function TripsContentManagement() {
           </div>
         </CardContent>
       </Card>
-      
+
       <Tabs defaultValue="page" className="w-full">
         <TabsList className="mb-4 grid grid-cols-3 gap-4">
           <TabsTrigger value="page">Page Content</TabsTrigger>
           <TabsTrigger value="gallery">Image Gallery</TabsTrigger>
           <TabsTrigger value="features">Feature Items</TabsTrigger>
         </TabsList>
-        
-        {/* Page Content Tab */}
+
         <TabsContent value="page" className="space-y-6">
           <Card>
             <CardHeader>
@@ -379,7 +370,7 @@ export default function TripsContentManagement() {
                     onChange={handleContentChange}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="pageSubtitle">Page Subtitle</Label>
                   <Input
@@ -389,9 +380,9 @@ export default function TripsContentManagement() {
                     onChange={handleContentChange}
                   />
                 </div>
-                
+
                 <Separator className="my-6" />
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="quote">Bottom Quote</Label>
                   <Textarea
@@ -406,8 +397,7 @@ export default function TripsContentManagement() {
             </CardContent>
           </Card>
         </TabsContent>
-        
-        {/* Image Gallery Tab */}
+
         <TabsContent value="gallery" className="space-y-6">
           <Card>
             <CardHeader>
@@ -417,7 +407,7 @@ export default function TripsContentManagement() {
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <Label>Current Gallery Images</Label>
-                
+
                 {galleryImages.length > 0 ? (
                   <DndContext
                     sensors={sensors}
@@ -425,17 +415,17 @@ export default function TripsContentManagement() {
                     onDragEnd={handleDragEnd}
                   >
                     <SortableContext
-                      items={galleryImages.map(img => img.id)}
+                      items={galleryImages.map(img => String(img.id))}
                       strategy={verticalListSortingStrategy}
                     >
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {galleryImages.map((image, index) => (
                           <SortableGalleryItem
-                            key={image.id}
-                            id={image.id}
+                            key={String(image.id)}
+                            id={String(image.id)}
                             src={image.src}
                             index={index}
-                            onDelete={() => removeImage(image.id)}
+                            onDelete={() => removeImage(image.id!)}
                           />
                         ))}
                       </div>
@@ -446,12 +436,12 @@ export default function TripsContentManagement() {
                     <p className="text-muted-foreground">No images in the gallery yet. Add your first image below.</p>
                   </div>
                 )}
-                
+
                 <Separator className="my-6" />
-                
+
                 <div className="space-y-4">
                   <Label>Add New Image</Label>
-                  
+
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <div className="relative aspect-[16/9] w-full overflow-hidden rounded-lg border border-dashed">
@@ -468,7 +458,7 @@ export default function TripsContentManagement() {
                           </div>
                         )}
                       </div>
-                      
+
                       <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm" className="flex items-center gap-1" asChild>
                           <label htmlFor="new-gallery-image">
@@ -486,23 +476,23 @@ export default function TripsContentManagement() {
                         {newImagePreview && (
                           <Button variant="outline" size="sm" className="flex items-center gap-1" onClick={() => setNewImagePreview(null)}>
                             <Trash2 className="h-4 w-4" />
-                            Remove
+                            Remove Preview
                           </Button>
                         )}
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center">
                       <div className="space-y-4">
                         <p className="text-sm text-muted-foreground">
-                          Upload a new image to add to the gallery. Recommended aspect ratio is 16:9. Maximum file size is 5MB.
+                          Upload a new image to add to the gallery. Recommended aspect ratio is 16:9. Maximum file size is 5MB. The image will be uploaded when you save changes.
                         </p>
-                        <Button 
-                          onClick={addImageToGallery} 
+                        <Button
+                          onClick={addImageToGallery}
                           disabled={!newImagePreview}
                           className="w-full sm:w-auto"
                         >
-                          Add to Gallery
+                          Add Image to List
                         </Button>
                       </div>
                     </div>
@@ -512,8 +502,7 @@ export default function TripsContentManagement() {
             </CardContent>
           </Card>
         </TabsContent>
-        
-        {/* Feature Items Tab */}
+
         <TabsContent value="features" className="space-y-6">
           <Card>
             <CardHeader>
@@ -521,17 +510,32 @@ export default function TripsContentManagement() {
               <CardDescription>Edit the feature items displayed on the page.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-8">
+              {featureItems.length === 0 && (
+                <div className="py-10 text-center border border-dashed rounded-lg">
+                  <p className="text-muted-foreground">No feature items yet. Add your first item below.</p>
+                </div>
+              )}
+
               {featureItems.map((feature, index) => (
-                <div key={feature.id} className="space-y-4">
-                  <div className="flex justify-between items-center">
+                <div key={String(feature.id)} className="space-y-4 p-4 border rounded-lg relative">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 h-8 w-8 text-destructive"
+                    onClick={() => removeFeatureItem(feature.id!)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <span className="sr-only">Remove Feature {index + 1}</span>
+                  </Button>
+                  <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-medium">Feature {index + 1}</h3>
                   </div>
-                  
+
                   <div className="grid md:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor={`feature_icon_${index}`}>Icon</Label>
-                      <Select 
-                        value={feature.icon} 
+                      <Select
+                        value={feature.icon}
                         onValueChange={(value) => handleIconChange(index, value)}
                       >
                         <SelectTrigger id={`feature_icon_${index}`}>
@@ -549,7 +553,7 @@ export default function TripsContentManagement() {
                         {feature.icon === "Users" && <Users className="w-8 h-8 text-amber-500" />}
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor={`feature_title_${index}`}>Title</Label>
                       <Input
@@ -558,7 +562,7 @@ export default function TripsContentManagement() {
                         onChange={(e) => handleFeatureItemChange(index, 'title', e.target.value)}
                       />
                     </div>
-                    
+
                     <div className="space-y-2 md:col-span-3">
                       <Label htmlFor={`feature_description_${index}`}>Description</Label>
                       <Textarea
@@ -569,15 +573,19 @@ export default function TripsContentManagement() {
                       />
                     </div>
                   </div>
-                  
-                  {index < featureItems.length - 1 && <Separator className="my-4" />}
                 </div>
               ))}
+              <Separator />
+              <div className="flex justify-center mt-6">
+                <Button variant="outline" onClick={addFeatureItem}>
+                  Add New Feature Item
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-      
+
       <div className="flex justify-end mt-8 space-x-4">
         <Button variant="outline" onClick={() => router.back()}>
           Cancel

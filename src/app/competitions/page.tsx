@@ -133,9 +133,9 @@ export default function Competitions(): JSX.Element {
             <div className="h-4 bg-gray-200 rounded-md w-full animate-pulse"></div>
             <div className="h-4 bg-gray-200 rounded-md w-full animate-pulse"></div>
           </div>
-          {/* Skeleton for Cards */}
+          {/* Skeleton for Cards - Increased to 6 */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[...Array(3)].map((_, index) => (
+            {[...Array(6)].map((_, index) => (
               <SkeletonCompetitionCard key={index} />
             ))}
           </div>
@@ -160,6 +160,19 @@ export default function Competitions(): JSX.Element {
     );
   }
 
+  // Calculate dynamic grid classes based on the number of competitions
+  const numCompetitions = competitionData?.competitions?.length ?? 0;
+  let gridClasses = "grid gap-8 "; // Base classes
+
+  if (numCompetitions === 1) {
+    gridClasses += "grid-cols-1 max-w-2xl mx-auto"; // Center single card
+  } else if (numCompetitions % 2 === 0) {
+    gridClasses += "grid-cols-1 md:grid-cols-2"; // Max 2 columns
+  }  else {
+    // Default for 3 or 5+ items: use up to 3 columns
+    gridClasses += "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"; 
+  }
+
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -180,8 +193,8 @@ export default function Competitions(): JSX.Element {
           {competitionData.description}
         </motion.p>
         
-        {competitionData.competitions.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {numCompetitions > 0 ? (
+          <div className={gridClasses}> {/* Apply dynamic classes here */}
             {competitionData.competitions.map((competition, index) => (
               <CompetitionCard key={competition.id || index} {...competition} />
             ))}
