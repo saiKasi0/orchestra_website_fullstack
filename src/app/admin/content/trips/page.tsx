@@ -229,8 +229,8 @@ export default function TripsContentManagement() {
       {
         id: `temp-feature-${Date.now()}`,
         icon: "MusicNote",
-        title: "New Feature Title",
-        description: "Enter feature description here."
+        title: "",
+        description: ""
       }
     ]);
     toast.info("New feature item added. Edit its content and save changes.");
@@ -368,6 +368,7 @@ export default function TripsContentManagement() {
                     name="pageTitle"
                     value={content.pageTitle}
                     onChange={handleContentChange}
+                    placeholder="Enter the main title for the page"
                   />
                 </div>
 
@@ -378,6 +379,7 @@ export default function TripsContentManagement() {
                     name="pageSubtitle"
                     value={content.pageSubtitle}
                     onChange={handleContentChange}
+                    placeholder="Enter a short subtitle to describe the page"
                   />
                 </div>
 
@@ -391,6 +393,7 @@ export default function TripsContentManagement() {
                     value={content.quote}
                     onChange={handleContentChange}
                     rows={4}
+                    placeholder="Add an optional quote to display at the bottom of the page"
                   />
                 </div>
               </div>
@@ -560,6 +563,7 @@ export default function TripsContentManagement() {
                         id={`feature_title_${index}`}
                         value={feature.title}
                         onChange={(e) => handleFeatureItemChange(index, 'title', e.target.value)}
+                        placeholder="Enter feature title"
                       />
                     </div>
 
@@ -570,6 +574,7 @@ export default function TripsContentManagement() {
                         value={feature.description}
                         onChange={(e) => handleFeatureItemChange(index, 'description', e.target.value)}
                         rows={3}
+                        placeholder="Enter a description for this feature"
                       />
                     </div>
                   </div>

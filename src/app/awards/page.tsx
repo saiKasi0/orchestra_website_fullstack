@@ -73,7 +73,7 @@ export default function Awards() {
   useEffect(() => {
     async function fetchContent() {
       try {
-        const response = await fetch("/api/content/awards")
+                const response = await fetch("/api/admin/content/awards")
         
         if (!response.ok) {
           throw new Error(`Failed to fetch content: ${response.status}`)
@@ -109,6 +109,21 @@ export default function Awards() {
     return <div className="min-h-screen flex justify-center items-center">No content available</div>
   }
 
+  // Calculate dynamic grid classes based on the number of achievements
+  const numAchievements = content.achievements.length;
+  let gridClasses = "grid gap-8 ";
+
+  if (numAchievements === 1) {
+    gridClasses += "grid-cols-1 max-w-2xl mx-auto"; // Center single card
+  } else if (numAchievements === 2) {
+    gridClasses += "grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto"; // Two columns centered
+  } else if (numAchievements === 4) {
+    gridClasses += "grid-cols-1 md:grid-cols-2"; // Two columns full width
+  } else {
+    // Default for 3 or 5+ items: use up to 3 columns
+    gridClasses += "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"; 
+  }
+
   return (
     <motion.main
       initial={{ opacity: 0 }}
@@ -141,17 +156,24 @@ export default function Awards() {
           </motion.p>
         </motion.div>
       </section>
-      <motion.div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 max-w-7xl mx-auto">
-        {content.achievements.map((achievement, index) => (
-          <VarsityOrchestraCard
-            key={achievement.id}
-            index={index}
-            title={achievement.title}
-            imageSrc={achievement.imageSrc}
-            imageAlt={achievement.imageAlt}
-          />
-        ))}
-      </motion.div>
+      
+      {numAchievements > 0 ? (
+        <motion.div className={`${gridClasses} max-w-7xl mx-auto`}>
+          {content.achievements.map((achievement, index) => (
+            <VarsityOrchestraCard
+              key={achievement.id}
+              index={index}
+              title={achievement.title}
+              imageSrc={achievement.imageSrc}
+              imageAlt={achievement.imageAlt}
+            />
+          ))}
+        </motion.div>
+      ) : (
+        <div className="text-center py-12 max-w-7xl mx-auto">
+          <p className="text-lg text-gray-500">No achievements are currently listed.</p>
+        </div>
+      )}
     </motion.main>
   )
 }
