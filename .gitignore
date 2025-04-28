@@ -46,3 +46,6 @@ next-env.d.ts
 supabase/seed.sql
 supabase/migrations/20250313220123_my_schema.sql
 .hintrc
+
+
+.vscode
