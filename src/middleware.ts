@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { apiRateLimiter, getIdentifier } from '@/utils/rateLimiter'; // Import rate limiter
 
 const ADMIN_LOGIN_PATH = "/admin";
 const ADMIN_UNAUTHORIZED_PATH = "/admin/unauthorized";
@@ -8,8 +9,28 @@ const ADMIN_BASE_PATH = "/admin/"; // Base path for admin routes
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
 
-  // Check if the path is an admin route that needs protection
+  // Apply rate limiting early for admin paths (excluding login/unauthorized pages)
   if (path.startsWith(ADMIN_BASE_PATH) && path !== ADMIN_LOGIN_PATH && path !== ADMIN_UNAUTHORIZED_PATH) {
+    if (apiRateLimiter) {
+      const identifier = getIdentifier(req);
+      if (identifier) {
+        const { success } = await apiRateLimiter.limit(identifier);
+        if (!success) {
+          console.warn(`Rate limit exceeded for path: ${path} by IP: ${identifier}`);
+          // Return a simple 429 response directly from middleware
+          return new NextResponse(JSON.stringify({ error: "Too many requests" }), {
+            status: 429,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+      } else {
+        console.warn(`Could not determine identifier for rate limiting path: ${path}`);
+        // Decide if you want to block requests without an identifier
+        // return new NextResponse(JSON.stringify({ error: "Could not identify request source" }), { status: 400 });
+      }
+    }
+
+    // --- Authentication/Authorization Checks ---
     const session = await getToken({
       req,
       secret: process.env.NEXTAUTH_SECRET,
@@ -31,7 +52,7 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // Allow the request to proceed if authenticated/authorized or not an admin path
+  // Allow the request to proceed if not rate-limited, authenticated/authorized, or not an admin path
   return NextResponse.next();
 }
 

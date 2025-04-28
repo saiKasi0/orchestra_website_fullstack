@@ -15,7 +15,7 @@ import { AdminPageLayout } from "@/components/admin/AdminPageLayout";
 
 export default function ResourcesContentManagementPage() {
   return (
-    <AdminPageLayout allowedRoles={["admin", "'leadership'"]} title="Resources Content Management">
+    <AdminPageLayout allowedRoles={["admin", "leadership"]} title="Resources Content Management">
       <div className="space-y-6">
         <ResourcesContentManagement />
       </div>

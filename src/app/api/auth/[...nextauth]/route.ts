@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { createClient } from '@supabase/supabase-js';
+import { loginRateLimiter } from '@/utils/rateLimiter'; // Import the rate limiter
 
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -20,6 +21,21 @@ const handler = NextAuth({
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
+
+        // --- Rate Limiting Start ---
+        if (loginRateLimiter) {
+          const identifier = credentials.email; // Use email as identifier for login attempts
+          const { success } = await loginRateLimiter.limit(identifier);
+
+          if (!success) {
+            console.warn(`Rate limit exceeded for login attempt: ${identifier}`);
+            // Optionally throw a specific error or return null to indicate failure
+            // Throwing an error provides more context on the client-side if handled properly
+             throw new Error("Too many login attempts. Please try again later.");
+            // return null; // Or simply return null
+          }
+        }
+        // --- Rate Limiting End ---
 
         try {
           // Authenticate with Supabase

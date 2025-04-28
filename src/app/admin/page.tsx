@@ -5,7 +5,6 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Mail, Lock, LogIn, Home, Shield } from "lucide-react";
-
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,7 +26,13 @@ export default function AdminLogin() {
 
       if (!result?.ok) {
         console.error("Login error:", result?.error);
-        setError("Invalid credentials. Please try again.");
+        // Check for rate limit error specifically
+        if (result?.error === "Too many login attempts. Please try again later.") {
+          setError("Too many login attempts. Please wait a moment and try again.");
+        } else {
+          // Set generic error for other login failures
+          setError("Invalid credentials. Please try again.");
+        }
       } else {
         // Get user data to check role
         const userResponse = await fetch("/api/auth/session");
@@ -42,6 +47,8 @@ export default function AdminLogin() {
         }
       }
     } catch (error) {
+      // Catch errors thrown *before* signIn completes (e.g., network issues)
+      // Note: Rate limit error thrown *inside* authorize is usually caught by signIn and returned in `result.error`
       setError("An unexpected error occurred. Please try again.");
       console.error("Login error:", error);
     } finally {

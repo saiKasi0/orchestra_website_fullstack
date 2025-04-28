@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server"; // Import NextRequest
 import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
+import { apiRateLimiter, getIdentifier } from '@/utils/rateLimiter'; // Import rate limiter and helper
 
 // Schema validation for POST request
 const createUserSchema = z.object({
@@ -18,7 +19,23 @@ const createUserSchema = z.object({
 });
 
 // Get all users
-export async function GET() {
+export async function GET(req: NextRequest) { // Use NextRequest
+  // --- Rate Limiting Start ---
+  if (apiRateLimiter) {
+      const identifier = getIdentifier(req);
+      if (identifier) {
+          const { success } = await apiRateLimiter.limit(identifier);
+          if (!success) {
+              console.warn(`Rate limit exceeded for GET /api/admin/users by IP: ${identifier}`);
+              return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+          }
+      } else {
+          console.warn("Could not determine identifier for rate limiting GET /api/admin/users");
+          // Optionally block if identifier is missing, or allow
+      }
+  }
+  // --- Rate Limiting End ---
+
   try {
     // Check authentication and authorization
     const session = await getServerSession(authOptions);
@@ -47,13 +64,29 @@ export async function GET() {
     return NextResponse.json({ users: data });
     
   } catch (error) {
-    console.error("Unexpected error in users GET endpoint:", error);
+    console.error("Unexpected error fetching users:", error);
     return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
   }
 }
 
 // Create a new user
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) { // Use NextRequest
+  // --- Rate Limiting Start ---
+  if (apiRateLimiter) {
+      const identifier = getIdentifier(req);
+      if (identifier) {
+          const { success } = await apiRateLimiter.limit(identifier);
+          if (!success) {
+              console.warn(`Rate limit exceeded for POST /api/admin/users by IP: ${identifier}`);
+              return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+          }
+      } else {
+          console.warn("Could not determine identifier for rate limiting POST /api/admin/users");
+          // Optionally block if identifier is missing, or allow and log
+      }
+  }
+  // --- Rate Limiting End ---
+
   try {
     // Check authentication and authorization
     const session = await getServerSession(authOptions);
@@ -151,7 +184,7 @@ export async function POST(req: Request) {
     }, { status: 201 });
     
   } catch (error) {
-    console.error("Unexpected error during user creation:", error);
+    console.error("Unexpected error creating user:", error);
     return NextResponse.json({ 
       error: "An unexpected error occurred", 
       message: error instanceof Error ? error.message : String(error) 

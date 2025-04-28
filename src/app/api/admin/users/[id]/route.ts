@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server"; // Import NextRequest
 import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
+import { apiRateLimiter, getIdentifier } from '@/utils/rateLimiter'; // Import rate limiter and helper
 
 // Schema validation for PATCH request
 const updateUserSchema = z.object({
@@ -10,7 +11,22 @@ const updateUserSchema = z.object({
 });
 
 // Update a user (role only for security)
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) { // Use NextRequest
+  // --- Rate Limiting Start ---
+  if (apiRateLimiter) {
+      const identifier = getIdentifier(req);
+      if (identifier) {
+          const { success } = await apiRateLimiter.limit(identifier);
+          if (!success) {
+              console.warn(`Rate limit exceeded for PATCH /api/admin/users/${params.id} by IP: ${identifier}`);
+              return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+          }
+      } else {
+          console.warn(`Could not determine identifier for rate limiting PATCH /api/admin/users/${params.id}`);
+      }
+  }
+  // --- Rate Limiting End ---
+
   try {
     const userId = params.id;
     
@@ -52,7 +68,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
     
     // Prevent self-role change as a safety measure
+    // This compares the email of the user being modified (existingUser.email)
+    // with the email of the currently logged-in admin (session.user.email).
     if (existingUser.email === session.user.email) {
+      console.warn(`Admin user ${session.user.email} attempted to change their own role.`);
       return NextResponse.json({ error: "Cannot change your own role" }, { status: 403 });
     }
     
@@ -81,7 +100,22 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 // Delete a user
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) { // Use NextRequest
+  // --- Rate Limiting Start ---
+  if (apiRateLimiter) {
+      const identifier = getIdentifier(req);
+      if (identifier) {
+          const { success } = await apiRateLimiter.limit(identifier);
+          if (!success) {
+              console.warn(`Rate limit exceeded for DELETE /api/admin/users/${params.id} by IP: ${identifier}`);
+              return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+          }
+      } else {
+          console.warn(`Could not determine identifier for rate limiting DELETE /api/admin/users/${params.id}`);
+      }
+  }
+  // --- Rate Limiting End ---
+
   try {
     const userId = params.id;
     

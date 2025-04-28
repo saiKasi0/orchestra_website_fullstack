@@ -34,8 +34,10 @@ export const authOptions: NextAuthOptions = {
               password: credentials.password,
             });
 
+          // Combine error check for cleaner logic
           if (authError || !authData.session || !authData.user) {
-            console.error("Supabase auth failed:", authError?.message);
+            console.warn("Supabase auth failed for:", credentials.email, authError?.message ? `Reason: ${authError.message}` : '');
+            // Return null for failed authentication attempts as per NextAuth convention
             return null;
           }
 
@@ -44,35 +46,46 @@ export const authOptions: NextAuthOptions = {
           // Step 2: Get user profile data from 'profiles' table
           const { data: profileData, error: profileError } = await supabase
             .from("profiles")
-            .select('*')
+            .select('id, full_name, role')
             .eq("auth_id", authData.user.id)
             .single();
 
+          // Combine error check
           if (profileError || !profileData) {
-            console.error("Profile fetch failed:", profileError?.message);
+            console.error("Profile fetch failed for:", credentials.email, profileError?.message ? `Reason: ${profileError.message}` : '');
+            // Sign out the user from Supabase if profile fetch fails after successful auth
+            await supabase.auth.signOut();
             return null;
           }
 
-          console.log("User role:", profileData.role);
+          console.log("User profile fetched for:", credentials.email, "Role:", profileData.role);
 
-          // Accept both admin and student roles - don't filter here
-          // We'll handle access control at the route level instead
-          if (!["admin", "leadership"].includes(profileData.role)) {
-            console.error("Invalid role:", profileData.role);
-            return null;
+          // Step 3: Enforce role check *during* authorization
+          const allowedRoles = ["admin", "leadership"];
+          if (!allowedRoles.includes(profileData.role)) {
+            console.warn(`Unauthorized role attempt for ${credentials.email}: ${profileData.role}`);
+            // Sign out the user from Supabase as they shouldn't have an active session if they can't log in here
+            await supabase.auth.signOut();
+            return null; // Deny authorization
           }
 
-          // Return user data including role - IMPORTANT: don't exclude students
+          // Return user data required for the session/token
           return {
+            // Ensure id is a string as expected by NextAuth User type
             id: profileData.id.toString(),
-            email: authData.user.email,
-            name: profileData.full_name || authData.user.email,
-            role: profileData.role, // Keep the role as is
-            accessToken: authData.session.access_token,
+            email: authData.user.email, // Email is guaranteed by Supabase auth success
+            name: profileData.full_name || authData.user.email, // Fallback name
+            role: profileData.role,
+            // Access/Refresh tokens are handled in JWT/Session callbacks if needed there
+            // Avoid returning sensitive tokens directly from authorize if possible
+            // Pass necessary info like Supabase user ID or session details if needed by JWT callback
+            supabaseUserId: authData.user.id, // Example if needed later
+            accessToken: authData.session.access_token, // Pass necessary tokens
             refreshToken: authData.session.refresh_token,
           };
         } catch (error) {
-          console.error("Authorization error:", error);
+          console.error("Unexpected authorization error:", error);
+          // Return null in case of unexpected errors
           return null;
         }
       },
