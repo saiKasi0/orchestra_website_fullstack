@@ -33,7 +33,6 @@ const StaffCard: React.FC<StaffCardProps> = ({ id, name, imageUrl, description }
               alt={name} 
               fill
               className="object-cover"
-              sizes="256px"
               loading="lazy"
             />
           ) : (

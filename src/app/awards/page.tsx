@@ -46,7 +46,7 @@ const AchievementCard = ({ title, imageSrc, imageAlt, index, isLoading }: Achiev
             ) : (
               <Image
                 className="w-fit rounded-lg object-contain"
-                src={imageSrc || "/placeholder.svg"}
+                src={imageSrc || ""}
                 alt={imageAlt || "Award image"}
                 width={200}
                 height={200}

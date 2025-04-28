@@ -60,7 +60,7 @@ const LeadershipMemberDisplay = ({
             fill
             className="object-cover"
             sizes={size === 'extra-large' ? '200px' : size === 'large' ? '160px' : '120px'}
-            loading="lazy" // Lazy load leadership images
+            priority
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center"
