@@ -25,11 +25,11 @@ export const loginRateLimiter = redis
     })
   : null;
 
-// Rate limiter for general API usage (e.g., 20 requests per 10 seconds per IP)
+// Rate limiter for general API usage (e.g., 30 requests per 10 seconds per IP)
 export const apiRateLimiter = redis
   ? new Ratelimit({
       redis: redis,
-      limiter: Ratelimit.slidingWindow(20, "10 s"), // 20 requests per 10 seconds
+      limiter: Ratelimit.slidingWindow(30, "10 s"), // 30 requests per 10 seconds
       analytics: true,
       prefix: "ratelimit:api",
     })
