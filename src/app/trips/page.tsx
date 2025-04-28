@@ -38,7 +38,13 @@ function Gallery({ images }: { images: GalleryImage[] }) {
       {images.map((image, index) => (
         <motion.div key={image.id} variants={fadeIn} className="overflow-hidden rounded-lg shadow-md">
           <AspectRatio ratio={16 / 9}>
-            <Image src={image.src || "/placeholder.svg"} alt={`Gallery image ${index + 1}`} fill className="object-cover" />
+            <Image 
+              src={image.src || ""} 
+              alt={`Gallery image ${index + 1}`} 
+              fill 
+              className="object-cover" 
+              loading="lazy" 
+            />
           </AspectRatio>
         </motion.div>
       ))}

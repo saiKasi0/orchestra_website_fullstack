@@ -171,6 +171,9 @@ export default function Concert() {
                 width={500}
                 height={500}
                 className="object-fit rounded-lg"
+                priority // Prioritize loading the poster image
+                // Optional: Add sizes if layout causes it to be responsive beyond width/height
+                // sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 500px" 
               />
             </motion.div>
           )}

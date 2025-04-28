@@ -410,7 +410,7 @@ export default function HomepageContentManagementPage() {
   }
 
   return (
-    <AdminPageLayout allowedRoles={["admin", "content_editor", "super_admin"]} title="Homepage Content Management">
+    <AdminPageLayout allowedRoles={["admin", "leadership"]} title="Homepage Content Management">
       <div className="space-y-6">
         <Card className="mb-6">
           <CardHeader>

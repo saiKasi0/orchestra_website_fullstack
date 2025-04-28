@@ -50,6 +50,7 @@ const AchievementCard = ({ title, imageSrc, imageAlt, index, isLoading }: Achiev
                 alt={imageAlt || "Award image"}
                 width={200}
                 height={200}
+                loading="lazy"
               />
             )}
           </motion.div>

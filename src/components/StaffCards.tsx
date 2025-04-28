@@ -1,18 +1,19 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import Image from "next/image"
 import { StaffMember } from "@/types/homepage"
+import React from "react"
 
 interface StaffCardProps {
-  id: string
-  name: string
-  imageUrl: string
-  description: React.ReactNode
+  id: string;
+  name: string;
+  imageUrl: string;
+  description: React.ReactNode;
 }
 
 interface StaffCardsProps {
-  data?: StaffMember[]
+  data: StaffMember[];
 }
 
 const StaffCard: React.FC<StaffCardProps> = ({ id, name, imageUrl, description }) => {
@@ -24,13 +25,25 @@ const StaffCard: React.FC<StaffCardProps> = ({ id, name, imageUrl, description }
       id={id}
       className="grid grid-cols-1 bg-white border p-8 border-gray-200 rounded-lg shadow hover:shadow-lg transition-shadow duration-300"
     >
-      <div className="flex justify-center">
-        <Avatar className="w-64 h-64 mb-3">
-          <AvatarImage src={imageUrl} className="object-fit"/>
-          <AvatarFallback>{name}</AvatarFallback>
-        </Avatar>
+      <div className="flex justify-center mb-5">
+        <div className="relative w-64 h-64 overflow-hidden rounded-full border-2 border-gray-200">
+          {imageUrl ? (
+            <Image 
+              src={imageUrl} 
+              alt={name} 
+              fill
+              className="object-cover"
+              sizes="256px"
+              loading="lazy"
+            />
+          ) : (
+            <div className="flex items-center justify-center w-full h-full bg-gray-100 text-gray-500 text-4xl font-semibold">
+              {name ? name.charAt(0) : '?'}
+            </div>
+          )}
+        </div>
       </div>
-      <div className="p-5">
+      <div className="p-5 text-center">
         <h5 className="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">{name}</h5>
         <div className="font-normal text-gray-700 dark:text-gray-400">{description}</div>
       </div>

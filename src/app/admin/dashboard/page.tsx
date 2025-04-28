@@ -18,7 +18,7 @@ export default function AdminDashboardPage() {
   const userName = session?.user?.name || "User";
   
   return (
-    <AdminPageLayout allowedRoles={["admin", "super_admin"]} title="Admin Dashboard">
+    <AdminPageLayout allowedRoles={["admin", "leadership"]} title="Admin Dashboard">
       {/* Welcome Card - Spans full width */}
       <Card className="mb-6">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

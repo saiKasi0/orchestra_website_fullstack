@@ -24,8 +24,10 @@ const CompetitionCard: React.FC<CompetitionSchema> = ({ name, description, image
               src={image} // Use the image URL directly
               alt={name}
               fill // Use fill for responsive container
-              className="object-contain" // Ensure image covers the area
-              unoptimized={image.startsWith('data:image')} // Keep unoptimized for base64 if needed, though unlikely here
+              className="object-contain"
+              unoptimized={image.startsWith('data:image')}
+              loading="lazy" // Lazy load competition images
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" // Example sizes, adjust based on grid layout
             />
           </div>
         )}

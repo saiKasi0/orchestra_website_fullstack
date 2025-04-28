@@ -46,7 +46,7 @@ function ContentSection({ title, description, href, icon }: ContentSectionProps)
 
 export default function ContentManagementPage() {
   return (
-    <AdminPageLayout allowedRoles={["admin", "content_editor", "super_admin"]} title="Content Management">
+    <AdminPageLayout allowedRoles={["admin", "leadership"]} title="Content Management">
       <div className="space-y-6">
         <div className="flex min-h-[calc(100vh-4rem)] w-full flex-col items-center justify-start">
           <div className="container mx-auto flex max-w-5xl flex-col items-center px-4 py-8">

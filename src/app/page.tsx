@@ -157,7 +157,8 @@ export default function Home() {
             alt="Cypress Ranch Orchestra"
             fill={true}
             className="opacity-50 object-cover"
-            priority
+            priority // Prioritize loading the hero image
+            sizes="100vw" // Image takes full viewport width
           />
         ) : (
           <div className="absolute inset-0 bg-blue-800/90 animate-pulse"></div>

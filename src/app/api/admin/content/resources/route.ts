@@ -58,7 +58,7 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Unauthorized - No session" }, { status: 401 });
     }
     
-    const allowedRoles = ["admin", "content_editor", "super_admin"];
+    const allowedRoles = ["admin", "leadership"];
     if (!session.user?.role || !allowedRoles.includes(session.user.role)) {
         return NextResponse.json({ error: "Unauthorized - Insufficient permissions" }, { status: 403 });
     }

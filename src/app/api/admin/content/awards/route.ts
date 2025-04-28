@@ -42,52 +42,17 @@ export async function GET() {
         details: awardsError.details
       });
       
-      // If no record exists yet, return default values
+      // If no record exists yet, return an empty structure
       if (awardsError.code === 'PGRST116') {
-        console.log(`[${requestId}] No awards content found, returning default values`);
+        console.log(`[${requestId}] No awards content found, returning empty structure`);
         return NextResponse.json({ 
           content: {
-            id: uuidv4(),
-            title: "Cypress Ranch Orchestra's Achievements",
-            description: "The Cypress Ranch Orchestra has consistently achieved remarkable success, earning a wide array of prestigious accolades across our various ensembles and competitions. From local and regional contests to state and national festivals, our orchestra's dedication to excellence has been recognized time and time again.",
-            achievements: [
-              {
-                id: "1",
-                title: "Most Area 27 Region Players in CFISD!",
-                imageSrc: "/CypressRanchOrchestraInstagramPhotos/Region2023.jpg",
-                imageAlt: "Cypress Ranch Orchestra Region players posing for a group photo",
-                order_number: 1
-              },
-              {
-                id: "2",
-                title: "Varsity UIL Orchestra Division 1 Rating",
-                imageSrc: "/CypressRanchOrchestraInstagramPhotos/Chamber2024Uil.jpg",
-                imageAlt: "Varsity UIL Orchestra performing at UIL competition",
-                order_number: 2
-              },
-              {
-                id: "3",
-                title: "Sub-Non-Varsity A UIL Orchestra Division 1 Rating",
-                imageSrc: "/CypressRanchOrchestraInstagramPhotos/Symphony2024Uil.jpg",
-                imageAlt: "Sub-Non-Varsity A UIL Orchestra performing at UIL competition",
-                order_number: 3
-              },
-              {
-                id: "4",
-                title: "Festival Disney Golden Mickey & String Orchestra Best in Class",
-                imageSrc: "/CypressRanchOrchestraInstagramPhotos/Disney2023.jpg",
-                imageAlt: "Cypress Ranch Orchestra winning Golden Mickey at Disney event",
-                order_number: 4
-              },
-              {
-                id: "5",
-                title: "Symphony - Commended Winner, Citation of Excellence 2024",
-                imageSrc: "/CypressRanchOrchestraInstagramPhotos/SymphonyCitationOfExcellence.jpg",
-                imageAlt: "Symphony orchestra receiving Citation of Excellence award",
-                order_number: 5
-              }
-            ]
+            id: null, // Indicate no existing content
+            title: "Awards", // Default title
+            description: "No description available.", // Default description
+            achievements: [] // Empty achievements array
           },
+          message: "No awards content found in the database.",
           requestId
         });
       }
@@ -109,7 +74,15 @@ export async function GET() {
         details: achievementsError.details,
         contentId: awardsData.id
       });
-      return formatErrorResponse("Failed to fetch achievements", achievementsError, 500);
+      // If content exists but achievements fail, return content with empty achievements
+      return NextResponse.json({
+        content: {
+          ...awardsData,
+          achievements: []
+        },
+        warning: "Failed to fetch achievements, returning content without them.",
+        requestId
+      });
     }
     
     // Combine the data and properly map database column names to camelCase
