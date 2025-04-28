@@ -2,26 +2,8 @@
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
+import { Orchestra, ConcertsContent } from "@/types/concerts";
 import { Loader2 } from "lucide-react";
-
-interface Orchestra {
-  id: string;
-  name: string;
-  songs: string[];
-}
-
-interface ConcertData {
-  id: string;
-  concert_name: string;
-  poster_image_url?: string;
-  no_concert_text?: string;
-  orchestras: Orchestra[];
-}
-
-interface ConcertOrderProps {
-  concertName: string;
-  orchestras: Orchestra[];
-}
 
 const pageVariants = {
   initial: { opacity: 0 },
@@ -54,7 +36,7 @@ const itemVariants = {
   }
 };
 
-const ConcertOrder: React.FC<ConcertOrderProps> = ({ concertName, orchestras }) => {
+const ConcertOrder: React.FC<{ concertName: string; orchestras: Orchestra[] }> = ({ concertName, orchestras }) => {
   return (
     <motion.div
       className="grid gap-5 px-5 py-5 lg:gap-16"
@@ -94,7 +76,7 @@ const ConcertOrder: React.FC<ConcertOrderProps> = ({ concertName, orchestras }) 
 
 export default function Concert() {
   const [isLoading, setIsLoading] = useState(true);
-  const [concertData, setConcertData] = useState<ConcertData | null>(null);
+  const [concertData, setConcertData] = useState<ConcertsContent | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -126,9 +108,10 @@ export default function Concert() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-        <p className="text-lg text-gray-600">Loading concert information...</p>
+      <div className="flex flex-col items-center justify-center min-h-[80vh]"> 
+        <div className="mb-4 text-7xl">🎻</div>
+        <p className="text-xl text-gray-600 dark:text-gray-400">Tuning the strings...</p>
+        <Loader2 className="animate-spin" />
       </div>
     );
   }
@@ -142,8 +125,7 @@ export default function Concert() {
     );
   }
   
-  // If there are no orchestras, render the no concert text instead of empty concert order
-  if (concertData.orchestras.length === 0) {
+  if (!concertData.orchestras || concertData.orchestras.length === 0) {
     return (
       <AnimatePresence mode="wait">
         <motion.main
@@ -185,7 +167,7 @@ export default function Concert() {
             >
               <Image
                 src={concertData.poster_image_url}
-                alt="concert_img"
+                alt={`${concertData.concert_name} Poster`}
                 width={500}
                 height={500}
                 className="object-fit rounded-lg"

@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import { homepageContentSchema } from "@/types/homepage";
 import { v4 as uuidv4 } from "uuid";
+import { uploadBase64Image, deleteStorageObject } from '@/utils/imageUtils';
 
 // Get homepage content
 export async function GET() {
@@ -118,6 +119,7 @@ export async function GET() {
 
 // Update homepage content
 export async function PUT(req: Request) {
+  const requestId = uuidv4(); // Generate a request ID for logging
   try {
     // Check authentication and authorization
     const session = await getServerSession(authOptions);
@@ -145,178 +147,147 @@ export async function PUT(req: Request) {
     
     // Create Supabase client
     const supabase = createClient();
-    
-    // Handle hero image upload if it's a base64 string
+    const BUCKET_NAME = 'homepage-images';
+
+    // --- Fetch Current Data for Comparison ---
+    let oldHeroImageUrl: string | null = null;
+    let oldStaffMembers: { id: string | number, image_url: string | null }[] = [];
+    let oldLeadershipMembers: { id: string | number, image_url: string | null }[] = [];
+
+    // Fetch current homepage content (for hero image)
+    const { data: currentHomepageData, error: fetchHomepageError } = await supabase
+      .from('homepage_content')
+      .select('hero_image_url')
+      .eq('id', 1)
+      .maybeSingle();
+    if (currentHomepageData) oldHeroImageUrl = currentHomepageData.hero_image_url;
+
+    // Fetch current staff members (for images)
+    const { data: currentStaffData, error: fetchStaffError } = await supabase
+      .from('staff_members')
+      .select('member_id, image_url');
+    if (currentStaffData) oldStaffMembers = currentStaffData.map(s => ({ id: s.member_id, image_url: s.image_url }));
+
+    // Fetch current leadership members (for images)
+    const { data: currentLeadershipData, error: fetchLeadershipError } = await supabase
+      .from('leadership_members')
+      .select('member_id, image_url');
+    if (currentLeadershipData) oldLeadershipMembers = currentLeadershipData.map(l => ({ id: l.member_id, image_url: l.image_url }));
+
+    if (fetchHomepageError) console.warn("Error fetching current homepage data:", fetchHomepageError.message);
+    if (fetchStaffError) console.warn("Error fetching current staff data:", fetchStaffError.message);
+    if (fetchLeadershipError) console.warn("Error fetching current leadership data:", fetchLeadershipError.message);
+
+    // --- Process Incoming Images (Upload Base64, Keep URLs) ---
+    let finalHeroImageUrl = content.hero_image_url;
     if (content.hero_image_url && content.hero_image_url.startsWith('data:image')) {
-      try {
-        // Extract base64 data and file type
-        const base64Pattern = /^data:image\/(\w+);base64,(.+)$/;
-        const matches = content.hero_image_url.match(base64Pattern);
-        
-        if (!matches || matches.length !== 3) {
-          throw new Error("Invalid image format");
-        }
-        
-        const imageType = matches[1];
-        const base64Data = matches[2];
-        
-        // Convert base64 to binary
-        const binaryData = Buffer.from(base64Data, 'base64');
-        
-        // Generate unique filename
-        const filename = `hero_image_${uuidv4()}.${imageType}`;
-        const filePath = `hero_images/${filename}`;
-        
-        // Upload to Supabase storage
-        const { error: uploadError } = await supabase
-          .storage
-          .from('homepage-images')
-          .upload(filePath, binaryData, {
-            contentType: `image/${imageType}`,
-            upsert: true
-          });
-        
-        if (uploadError) {
-          console.error("Error uploading image:", uploadError);
-          throw new Error("Failed to upload image");
-        }
-        
-        // Get the public URL
-        const { data: urlData } = supabase
-          .storage
-          .from('homepage-images')
-          .getPublicUrl(filePath);
-        
-        // Update the image URL to the stored version
-        content.hero_image_url = urlData.publicUrl;
-        
-      } catch (error) {
-        console.error("Error processing image upload:", error);
-        return NextResponse.json({ error: "Failed to process image upload" }, { status: 500 });
+      console.log(`[${requestId}] Processing base64 hero image...`);
+      const uploadedUrl = await uploadBase64Image(
+        supabase,
+        BUCKET_NAME,
+        content.hero_image_url,
+        'hero_images/', // Path prefix
+        requestId
+      );
+      if (uploadedUrl) {
+        finalHeroImageUrl = uploadedUrl;
+        console.log(`[${requestId}] Uploaded new hero image: ${finalHeroImageUrl}`);
+      } else {
+        console.error(`[${requestId}] Failed to upload hero image.`);
+        finalHeroImageUrl = oldHeroImageUrl ?? undefined;
       }
     }
-    
-    // Process staff member images
+
     if (content.staff_members && content.staff_members.length > 0) {
       for (let i = 0; i < content.staff_members.length; i++) {
         const member = content.staff_members[i];
-        
         if (member.image_url && member.image_url.startsWith('data:image')) {
-          try {
-            // Extract base64 data and file type
-            const base64Pattern = /^data:image\/(\w+);base64,(.+)$/;
-            const matches = member.image_url.match(base64Pattern);
-            
-            if (!matches || matches.length !== 3) {
-              continue; // Skip invalid images
-            }
-            
-            const imageType = matches[1];
-            const base64Data = matches[2];
-            
-            // Convert base64 to binary
-            const binaryData = Buffer.from(base64Data, 'base64');
-            
-            // Generate unique filename
-            const filename = `staff_${member.id}_${uuidv4()}.${imageType}`;
-            const filePath = `staff_images/${filename}`;
-            
-            // Upload to Supabase storage
-            const { error: uploadError } = await supabase
-              .storage
-              .from('homepage-images')
-              .upload(filePath, binaryData, {
-                contentType: `image/${imageType}`,
-                upsert: true
-              });
-            
-            if (uploadError) {
-              console.error(`Error uploading staff image for ${member.name}:`, uploadError);
-              continue; // Skip to next member if upload fails
-            }
-            
-            // Get the public URL
-            const { data: urlData } = supabase
-              .storage
-              .from('homepage-images')
-              .getPublicUrl(filePath);
-            
-            // Update the image URL to the stored version
-            content.staff_members[i].image_url = urlData.publicUrl;
-            
-          } catch (error) {
-            console.error(`Error processing staff image for ${member.name}:`, error);
-            // Continue with other uploads even if one fails
+          console.log(`[${requestId}] Processing base64 staff image for ${member.name}...`);
+          const uploadedUrl = await uploadBase64Image(
+            supabase,
+            BUCKET_NAME,
+            member.image_url,
+            'staff_images/', // Path prefix
+            requestId
+          );
+          if (uploadedUrl) {
+            content.staff_members[i].image_url = uploadedUrl;
+            console.log(`[${requestId}] Uploaded new staff image for ${member.name}: ${uploadedUrl}`);
+          } else {
+            console.error(`[${requestId}] Failed to upload staff image for ${member.name}.`);
+            const oldMember = oldStaffMembers.find(m => m.id === member.id);
+            content.staff_members[i].image_url = oldMember?.image_url ?? "";
           }
         }
       }
     }
-    
-    // Process leadership member images
+
     if (content.leadership_sections && content.leadership_sections.length > 0) {
       for (const section of content.leadership_sections) {
         if (section.members && section.members.length > 0) {
           for (let i = 0; i < section.members.length; i++) {
             const member = section.members[i];
-            
             if (member.image_url && member.image_url.startsWith('data:image')) {
-              try {
-                // Extract base64 data and file type
-                const base64Pattern = /^data:image\/(\w+);base64,(.+)$/;
-                const matches = member.image_url.match(base64Pattern);
-                
-                if (!matches || matches.length !== 3) {
-                  continue; // Skip invalid images
-                }
-                
-                const imageType = matches[1];
-                const base64Data = matches[2];
-                
-                // Convert base64 to binary
-                const binaryData = Buffer.from(base64Data, 'base64');
-                
-                // Generate unique filename
-                const filename = `leadership_${section.id}_${member.id}_${uuidv4()}.${imageType}`;
-                const filePath = `leadership_images/${filename}`;
-                
-                // Upload to Supabase storage
-                const { error: uploadError } = await supabase
-                  .storage
-                  .from('homepage-images')
-                  .upload(filePath, binaryData, {
-                    contentType: `image/${imageType}`,
-                    upsert: true
-                  });
-                
-                if (uploadError) {
-                  console.error(`Error uploading leadership image for ${member.name}:`, uploadError);
-                  continue; // Skip to next member if upload fails
-                }
-                
-                // Get the public URL
-                const { data: urlData } = supabase
-                  .storage
-                  .from('homepage-images')
-                  .getPublicUrl(filePath);
-                
-                // Update the image URL to the stored version
-                member.image_url = urlData.publicUrl;
-                
-              } catch (error) {
-                console.error(`Error processing leadership image for ${member.name}:`, error);
-                // Continue with other uploads even if one fails
+              console.log(`[${requestId}] Processing base64 leadership image for ${member.name}...`);
+              const uploadedUrl = await uploadBase64Image(
+                supabase,
+                BUCKET_NAME,
+                member.image_url,
+                'leadership_images/', // Path prefix
+                requestId
+              );
+              if (uploadedUrl) {
+                section.members[i].image_url = uploadedUrl;
+                console.log(`[${requestId}] Uploaded new leadership image for ${member.name}: ${uploadedUrl}`);
+              } else {
+                console.error(`[${requestId}] Failed to upload leadership image for ${member.name}.`);
+                const oldMember = oldLeadershipMembers.find(m => m.id === member.id);
+                section.members[i].image_url = oldMember?.image_url ?? "";
               }
             }
           }
         }
       }
     }
-    
+
+    // --- Delete Unused Images from Storage ---
+    if (oldHeroImageUrl && oldHeroImageUrl !== finalHeroImageUrl && oldHeroImageUrl.includes(`/${BUCKET_NAME}/`)) {
+      console.log(`[${requestId}] Deleting old hero image: ${oldHeroImageUrl}`);
+      await deleteStorageObject(supabase, BUCKET_NAME, oldHeroImageUrl, requestId);
+    } else if (oldHeroImageUrl && !finalHeroImageUrl && oldHeroImageUrl.includes(`/${BUCKET_NAME}/`)) {
+      console.log(`[${requestId}] Hero image removed, deleting old: ${oldHeroImageUrl}`);
+      await deleteStorageObject(supabase, BUCKET_NAME, oldHeroImageUrl, requestId);
+    }
+
+    const finalStaffImageUrls = new Set(content.staff_members.map(m => m.image_url).filter(Boolean));
+    const staffUrlsToDelete = oldStaffMembers
+        .map(m => m.image_url)
+        .filter(url => url && url.includes(`/${BUCKET_NAME}/staff_images/`) && !finalStaffImageUrls.has(url));
+    if (staffUrlsToDelete.length > 0) {
+        console.log(`[${requestId}] Deleting ${staffUrlsToDelete.length} unused staff images...`);
+        for (const url of staffUrlsToDelete) {
+            await deleteStorageObject(supabase, BUCKET_NAME, url, requestId);
+        }
+    }
+
+    const finalLeadershipImageUrls = new Set(
+        content.leadership_sections.flatMap(s => s.members.map(m => m.image_url)).filter(Boolean)
+    );
+    const leadershipUrlsToDelete = oldLeadershipMembers
+        .map(m => m.image_url)
+        .filter(url => url && url.includes(`/${BUCKET_NAME}/leadership_images/`) && !finalLeadershipImageUrls.has(url));
+     if (leadershipUrlsToDelete.length > 0) {
+        console.log(`[${requestId}] Deleting ${leadershipUrlsToDelete.length} unused leadership images...`);
+        for (const url of leadershipUrlsToDelete) {
+            await deleteStorageObject(supabase, BUCKET_NAME, url, requestId);
+        }
+    }
+
     // Update basic content in homepage_content table
     const { error: updateError } = await supabase
       .from('homepage_content')
       .update({
-        hero_image_url: content.hero_image_url,
+        hero_image_url: finalHeroImageUrl ?? undefined,
         hero_title: content.hero_title,
         hero_subtitle: content.hero_subtitle,
         about_title: content.about_title,
@@ -335,18 +306,16 @@ export async function PUT(req: Request) {
     }
     
     // Update event cards
-    // First, delete all existing event cards
     const { error: deleteCardsError } = await supabase
       .from('homepage_event_cards')
       .delete()
-      .neq('id', 0); // Delete all records
+      .neq('id', 0);
       
     if (deleteCardsError) {
       console.error("Error deleting event cards:", deleteCardsError);
       return NextResponse.json({ error: "Failed to update event cards" }, { status: 500 });
     }
     
-    // Then, insert new event cards
     const eventCardsToInsert = content.event_cards.map((card, index) => ({
       card_id: card.id,
       title: card.title,
@@ -368,23 +337,21 @@ export async function PUT(req: Request) {
     }
     
     // Update staff members
-    // First, delete all existing staff members
     const { error: deleteStaffError } = await supabase
       .from('staff_members')
       .delete()
-      .neq('id', 0); // Delete all records
+      .neq('id', 0);
       
     if (deleteStaffError) {
       console.error("Error deleting staff members:", deleteStaffError);
       return NextResponse.json({ error: "Failed to update staff members" }, { status: 500 });
     }
     
-    // Then, insert new staff members
     const staffMembersToInsert = content.staff_members.map((member, index) => ({
       member_id: member.id,
       name: member.name,
       position: member.position,
-      image_url: member.image_url,
+      image_url: member.image_url ?? undefined,
       bio: member.bio,
       order_number: index
     }));
@@ -401,7 +368,6 @@ export async function PUT(req: Request) {
     }
     
     // Update leadership sections and members
-    // First, get existing sections to compare
     const { data: existingSections, error: getSectionsError } = await supabase
       .from('leadership_sections')
       .select('section_id');
@@ -411,10 +377,8 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Failed to update leadership sections" }, { status: 500 });
     }
     
-    // Get list of section IDs that should be kept
     const newSectionIds = content.leadership_sections.map(section => section.id);
     
-    // Delete sections that are not in the new list
     const sectionIdsToDelete = existingSections
       .filter(section => !newSectionIds.includes(section.section_id))
       .map(section => section.section_id);
@@ -431,11 +395,9 @@ export async function PUT(req: Request) {
       }
     }
     
-    // Update or insert sections and their members
     for (let i = 0; i < content.leadership_sections.length; i++) {
       const section = content.leadership_sections[i];
       
-      // Check if section already exists - modified to avoid .single() error
       const { error: checkSectionError } = await supabase
         .from('leadership_sections')
         .select('*')
@@ -446,13 +408,12 @@ export async function PUT(req: Request) {
         return NextResponse.json({ error: "Failed to update leadership sections" }, { status: 500 });
       }
       
-      // Upsert the section
       const { error: upsertSectionError } = await supabase
         .from('leadership_sections')
         .upsert({
           section_id: section.id,
           name: section.name,
-          color: section.color || '#3b82f6', // Add color field
+          color: section.color || '#3b82f6',
           order_number: i,
         }, { onConflict: 'section_id' });
         
@@ -461,7 +422,6 @@ export async function PUT(req: Request) {
         return NextResponse.json({ error: "Failed to update leadership sections" }, { status: 500 });
       }
       
-      // Delete existing members for this section
       const { error: deleteMembersError } = await supabase
         .from('leadership_members')
         .delete()
@@ -472,12 +432,11 @@ export async function PUT(req: Request) {
         return NextResponse.json({ error: "Failed to update leadership members" }, { status: 500 });
       }
       
-      // Insert new members
       const membersToInsert = section.members.map((member, memberIndex) => ({
         member_id: member.id,
         section_id: section.id,
         name: member.name,
-        image_url: member.image_url,
+        image_url: member.image_url ?? undefined,
         order_number: memberIndex
       }));
       
@@ -493,15 +452,14 @@ export async function PUT(req: Request) {
       }
     }
     
-    // Log the update for audit purposes
-    console.info(`Homepage content updated by ${session.user.email}`);
+    console.info(`[${requestId}] Homepage content updated by ${session.user.email}`);
     
     return NextResponse.json({
       message: "Homepage content updated successfully"
     });
     
   } catch (error) {
-    console.error("Unexpected error in homepage content PUT endpoint:", error);
+    console.error(`[${requestId}] Unexpected error in homepage content PUT endpoint:`, error);
     return NextResponse.json({ 
       error: "An unexpected error occurred", 
       message: error instanceof Error ? error.message : String(error) 

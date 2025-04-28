@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Plus, Upload, Trash2, Loader2, ImageIcon, PlusCircle, GripVertical, UserCircle } from "lucide-react";
+import { Plus, Upload, Trash2, Loader2, ImageIcon, PlusCircle, GripVertical, UserCircle, ArrowUp, ArrowDown } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
 import { 
@@ -155,13 +155,6 @@ export default function HomepageContentManagementPage() {
   }, [imagePreview]);
 
   // Memoize event handlers for event cards
-  const handleEventCardChange = useCallback((index: number, field: keyof EventCard, value: string) => {
-    setEventCards(prev => {
-      const newEventCards = [...prev];
-      newEventCards[index][field] = value;
-      return newEventCards;
-    });
-  }, []);
 
   // Memoize staff member changes
   const handleStaffChange = useCallback((index: number, field: keyof StaffMember, value: string) => {
@@ -182,23 +175,7 @@ export default function HomepageContentManagementPage() {
   }, []);
 
   // Optimize add/remove functions with useCallback
-  const addEventCard = useCallback(() => {
-    setEventCards(prev => [...prev, {
-      id: uuidv4(),
-      title: "New Event",
-      description: "Description for the new event",
-      link_text: "Learn More →",
-      link_url: "/"
-    }]);
-  }, []);
 
-  const removeEventCard = useCallback((index: number) => {
-    setEventCards(prev => {
-      const newEventCards = [...prev];
-      newEventCards.splice(index, 1);
-      return newEventCards;
-    });
-  }, []);
 
   // Add a new staff member
   const addStaffMember = useCallback(() => {
@@ -216,6 +193,26 @@ export default function HomepageContentManagementPage() {
     setStaffMembers(prev => {
       const newStaffMembers = [...prev];
       newStaffMembers.splice(index, 1);
+      return newStaffMembers;
+    });
+  }, []);
+
+  // Move staff member up
+  const moveStaffMemberUp = useCallback((index: number) => {
+    if (index <= 0) return; // Already at the top
+    setStaffMembers(prev => {
+      const newStaffMembers = [...prev];
+      [newStaffMembers[index - 1], newStaffMembers[index]] = [newStaffMembers[index], newStaffMembers[index - 1]]; // Swap
+      return newStaffMembers;
+    });
+  }, []);
+
+  // Move staff member down
+  const moveStaffMemberDown = useCallback((index: number) => {
+    setStaffMembers(prev => {
+      if (index >= prev.length - 1) return prev; // Already at the bottom
+      const newStaffMembers = [...prev];
+      [newStaffMembers[index], newStaffMembers[index + 1]] = [newStaffMembers[index + 1], newStaffMembers[index]]; // Swap
       return newStaffMembers;
     });
   }, []);
@@ -241,6 +238,26 @@ export default function HomepageContentManagementPage() {
     setLeadershipSections(prev => {
       const newSections = [...prev];
       newSections.splice(sectionIndex, 1);
+      return newSections;
+    });
+  }, []);
+
+  // Move leadership section up
+  const moveLeadershipSectionUp = useCallback((index: number) => {
+    if (index <= 0) return; // Already at the top
+    setLeadershipSections(prev => {
+      const newSections = [...prev];
+      [newSections[index - 1], newSections[index]] = [newSections[index], newSections[index - 1]]; // Swap
+      return newSections;
+    });
+  }, []);
+
+  // Move leadership section down
+  const moveLeadershipSectionDown = useCallback((index: number) => {
+    setLeadershipSections(prev => {
+      if (index >= prev.length - 1) return prev; // Already at the bottom
+      const newSections = [...prev];
+      [newSections[index], newSections[index + 1]] = [newSections[index + 1], newSections[index]]; // Swap
       return newSections;
     });
   }, []);
@@ -379,7 +396,6 @@ export default function HomepageContentManagementPage() {
   }, [content, eventCards, staffMembers, leadershipSections, router]);
 
   // Memoized derived states
-  const hasEventCards = useMemo(() => eventCards.length > 0, [eventCards]);
   const hasStaffMembers = useMemo(() => staffMembers.length > 0, [staffMembers]);
   const hasLeadershipSections = useMemo(() => leadershipSections.length > 0, [leadershipSections]);
 
@@ -409,7 +425,6 @@ export default function HomepageContentManagementPage() {
           <TabsList className="mb-4 grid grid-cols-5 gap-4 md:flex">
             <TabsTrigger value="hero">Hero Section</TabsTrigger>
             <TabsTrigger value="about">About Section</TabsTrigger>
-            <TabsTrigger value="events">Featured Events</TabsTrigger>
             <TabsTrigger value="stats">Stats</TabsTrigger>
             <TabsTrigger value="staff">Staff & Leadership</TabsTrigger>
           </TabsList>
@@ -585,106 +600,6 @@ export default function HomepageContentManagementPage() {
             </Card>
           </TabsContent>
 
-          {/* Featured Events Tab */}
-          <TabsContent value="events" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Featured Events Section</CardTitle>
-                <CardDescription>Manage the featured event cards shown on your homepage.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="featured_events_title">Section Title</Label>
-                  <Input
-                    id="featured_events_title"
-                    name="featured_events_title"
-                    value={content.featured_events_title}
-                    onChange={handleContentChange}
-                  />
-                </div>
-
-                <Separator className="my-6" />
-
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-medium">Event Cards</h3>
-                    <Button onClick={addEventCard} size="sm" className="flex items-center gap-1">
-                      <Plus className="h-4 w-4" />
-                      Add Card
-                    </Button>
-                  </div>
-
-                  {hasEventCards ? (
-                    eventCards.map((card, index) => (
-                      <Card key={card.id} className="relative">
-                        <CardHeader>
-                          <div className="flex justify-between items-center">
-                            <CardTitle className="text-base font-medium">Card {index + 1}</CardTitle>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8 text-destructive"
-                              onClick={() => removeEventCard(index)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="grid gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor={`card_title_${index}`}>Title</Label>
-                            <Input
-                              id={`card_title_${index}`}
-                              value={card.title}
-                              onChange={(e) => handleEventCardChange(index, 'title', e.target.value)}
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor={`card_description_${index}`}>Description</Label>
-                            <Textarea
-                              id={`card_description_${index}`}
-                              value={card.description}
-                              onChange={(e) => handleEventCardChange(index, 'description', e.target.value)}
-                              rows={3}
-                            />
-                          </div>
-
-                          <div className="grid gap-4 sm:grid-cols-2">
-                            <div className="space-y-2">
-                              <Label htmlFor={`card_link_text_${index}`}>Button Text</Label>
-                              <Input
-                                id={`card_link_text_${index}`}
-                                value={card.link_text}
-                                onChange={(e) => handleEventCardChange(index, 'link_text', e.target.value)}
-                              />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor={`card_link_url_${index}`}>Link URL</Label>
-                              <Input
-                                id={`card_link_url_${index}`}
-                                value={card.link_url}
-                                onChange={(e) => handleEventCardChange(index, 'link_url', e.target.value)}
-                              />
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                  ) : (
-                    <div className="py-8 text-center border border-dashed rounded-lg bg-muted/20">
-                      <p className="text-sm text-muted-foreground">No event cards yet.</p>
-                      <Button onClick={addEventCard} variant="outline" size="sm" className="mt-2">
-                        Add First Card
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           {/* Staff & Leadership Tab */}
           <TabsContent value="staff" className="space-y-6">
             <Card>
@@ -721,14 +636,40 @@ export default function HomepageContentManagementPage() {
                         <CardHeader>
                           <div className="flex justify-between items-center">
                             <CardTitle className="text-base font-medium">{staff.name}</CardTitle>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8 text-destructive"
-                              onClick={() => removeStaffMember(index)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              {/* Move Up Button */}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => moveStaffMemberUp(index)}
+                                disabled={index === 0}
+                                title="Move Up"
+                              >
+                                <ArrowUp className="h-4 w-4" />
+                              </Button>
+                              {/* Move Down Button */}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => moveStaffMemberDown(index)}
+                                disabled={index === staffMembers.length - 1}
+                                title="Move Down"
+                              >
+                                <ArrowDown className="h-4 w-4" />
+                              </Button>
+                              {/* Remove Button */}
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-destructive"
+                                onClick={() => removeStaffMember(index)}
+                                title="Remove Staff Member"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </CardHeader>
                         <CardContent className="grid gap-4 md:grid-cols-2">
@@ -831,26 +772,49 @@ export default function HomepageContentManagementPage() {
                       leadershipSections.map((section, sectionIndex) => (
                         <AccordionItem key={section.id} value={section.id} className="border border-muted rounded-lg mb-4">
                           <div className="flex items-center justify-between px-4">
-                            <AccordionTrigger className="py-2">
+                            <AccordionTrigger className="py-2 flex-grow hover:no-underline"> 
                               <div className="flex items-center gap-2">
-                                <GripVertical className="h-4 w-4 text-muted-foreground opacity-50" />
+                                <GripVertical className="h-4 w-4 text-muted-foreground opacity-50 cursor-grab" />
                                 <span>{section.name}</span>
                                 <Badge variant="outline" className="ml-2">
                                   {section.members.length} {section.members.length === 1 ? 'member' : 'members'}
                                 </Badge>
                               </div>
                             </AccordionTrigger>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8 text-destructive"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                removeLeadershipSection(sectionIndex);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <div className="flex items-center gap-1 ml-2 flex-shrink-0"> 
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={(e) => { e.stopPropagation(); moveLeadershipSectionUp(sectionIndex); }}
+                                disabled={sectionIndex === 0}
+                                title="Move Section Up"
+                              >
+                                <ArrowUp className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={(e) => { e.stopPropagation(); moveLeadershipSectionDown(sectionIndex); }}
+                                disabled={sectionIndex === leadershipSections.length - 1}
+                                title="Move Section Down"
+                              >
+                                <ArrowDown className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  removeLeadershipSection(sectionIndex);
+                                }}
+                                title="Remove Section"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                           <AccordionContent className="px-4 pb-4">
                             <div className="space-y-4">

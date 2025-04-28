@@ -22,11 +22,13 @@ import { TripsContent, GalleryImage, FeatureItem } from "@/types/trips";
 
 // Sortable gallery item component
 const SortableGalleryItem = ({ id, src, index, onDelete }: { id: string; src: string; index: number; onDelete: () => void }) => {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : 'auto',
   };
 
   return (
@@ -48,9 +50,7 @@ const SortableGalleryItem = ({ id, src, index, onDelete }: { id: string; src: st
       </Button>
 
       <div
-        className="border rounded-lg overflow-hidden cursor-move bg-white"
-        {...attributes}
-        {...listeners}
+        className="border rounded-lg overflow-hidden cursor-move bg-white shadow-sm"
       >
         <div className="relative aspect-[16/9] w-full">
           <Image
@@ -58,12 +58,14 @@ const SortableGalleryItem = ({ id, src, index, onDelete }: { id: string; src: st
             alt={`Gallery image ${index + 1}`}
             fill
             className="object-cover"
+            unoptimized={src?.startsWith('data:image/')} // Avoid optimization for base64 previews
           />
         </div>
-        <div className="p-2 flex items-center bg-white border-t">
-          <div className="flex items-center">
-            <GripVertical className="h-4 w-4 text-muted-foreground mr-2" />
-            <span className="text-sm">Image {index + 1}</span>
+        <div className="p-2 flex items-center justify-between bg-white border-t">
+          <span className="text-sm font-medium">Image {index + 1}</span>
+          {/* Drag Handle */}
+          <div {...attributes} {...listeners} className="p-1 cursor-move text-muted-foreground hover:bg-accent rounded">
+             <GripVertical className="h-5 w-5" />
           </div>
         </div>
       </div>

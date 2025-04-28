@@ -4,17 +4,15 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Image from "next/image"
 import { motion } from "framer-motion"
-import { Loader2 } from "lucide-react"
-import { AwardsContent } from "@/types/awards"
+import { AwardsContent, Achievement as AchievementData } from "@/types/awards"
+import { Skeleton } from "@/components/ui/skeleton" // Import Skeleton
 
-type VarsityOrchestraCardProps = {
-  title: string
-  imageSrc: string
-  imageAlt: string
+type AchievementCardProps = Partial<AchievementData> & {
   index: number
+  isLoading?: boolean
 }
 
-const VarsityOrchestraCard = ({ title, imageSrc, imageAlt, index }: VarsityOrchestraCardProps) => {
+const AchievementCard = ({ title, imageSrc, imageAlt, index, isLoading }: AchievementCardProps) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 50 }}
@@ -24,44 +22,40 @@ const VarsityOrchestraCard = ({ title, imageSrc, imageAlt, index }: VarsityOrche
         delay: index * 0.1,
         ease: "easeOut",
       }}
-      whileHover={{
+      whileHover={!isLoading ? { // Disable hover effect when loading
         scale: 1.02,
         transition: { duration: 0.2 },
-      }}
+      } : {}}
     >
       <Card className="grid grid-cols-1 h-full">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold text-gray-800">{title}</CardTitle>
+          {isLoading ? (
+            <Skeleton className="h-6 w-3/4" /> // Skeleton for title
+          ) : (
+            <CardTitle className="text-lg font-semibold text-gray-800">{title}</CardTitle>
+          )}
         </CardHeader>
         <CardContent>
           <motion.div
             className="flex items-center justify-center"
-            whileHover={{ scale: 1.05 }}
+            whileHover={!isLoading ? { scale: 1.05 } : {}} // Disable hover effect when loading
             transition={{ duration: 0.2 }}
           >
-            <Image
-              className="w-fit rounded-lg object-contain"
-              src={imageSrc || "/placeholder.svg"}
-              alt={imageAlt}
-              width={200}
-              height={200}
-            />
+            {isLoading ? (
+              <Skeleton className="w-[200px] h-[200px] rounded-lg" /> // Skeleton for image
+            ) : (
+              <Image
+                className="w-fit rounded-lg object-contain"
+                src={imageSrc || "/placeholder.svg"}
+                alt={imageAlt || "Award image"}
+                width={200}
+                height={200}
+              />
+            )}
           </motion.div>
         </CardContent>
       </Card>
     </motion.div>
-  )
-}
-
-// Loading skeleton component
-const LoadingSkeleton = () => {
-  return (
-    <div className="min-h-screen flex justify-center items-center">
-      <div className="text-center">
-        <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4" />
-        <p className="text-lg">Loading awards...</p>
-      </div>
-    </div>
   )
 }
 
@@ -73,7 +67,7 @@ export default function Awards() {
   useEffect(() => {
     async function fetchContent() {
       try {
-                const response = await fetch("/api/admin/content/awards")
+        const response = await fetch("/api/admin/content/awards")
         
         if (!response.ok) {
           throw new Error(`Failed to fetch content: ${response.status}`)
@@ -97,19 +91,39 @@ export default function Awards() {
     fetchContent()
   }, [])
 
-  if (isLoading) {
-    return <LoadingSkeleton />
-  }
-  
   if (error) {
     return <div className="min-h-screen flex justify-center items-center">Error loading content</div>
   }
-  
+
+  // Render skeleton grid while loading
+  if (isLoading) {
+    const loadingGridClasses = "grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 max-w-7xl mx-auto"; // Example: always 3 columns for loading
+
+    return (
+      <main className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        {/* Optional: Skeleton for header */}
+        <section className="mb-16">
+          <div className="mx-auto max-w-4xl text-center">
+            <Skeleton className="h-10 w-3/4 mx-auto mb-4" />
+            <Skeleton className="h-6 w-full mx-auto mt-5" />
+            <Skeleton className="h-6 w-5/6 mx-auto mt-2" />
+          </div>
+        </section>
+        {/* Skeleton Grid */}
+        <div className={loadingGridClasses}>
+          {Array.from({ length: 6 }).map((_, index) => ( // Render 6 skeleton cards
+            <AchievementCard key={`skeleton-${index}`} index={index} isLoading={true} />
+          ))}
+        </div>
+      </main>
+    )
+  }
+
   if (!content) {
     return <div className="min-h-screen flex justify-center items-center">No content available</div>
   }
 
-  // Calculate dynamic grid classes based on the number of achievements
+  // Calculate dynamic grid classes based on the actual number of achievements
   const numAchievements = content.achievements.length;
   let gridClasses = "grid gap-8 ";
 
@@ -121,7 +135,7 @@ export default function Awards() {
     gridClasses += "grid-cols-1 md:grid-cols-2"; // Two columns full width
   } else {
     // Default for 3 or 5+ items: use up to 3 columns
-    gridClasses += "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"; 
+    gridClasses += "grid-cols-1 md:grid-cols-2 lg:grid-cols-3";
   }
 
   return (
@@ -156,16 +170,15 @@ export default function Awards() {
           </motion.p>
         </motion.div>
       </section>
-      
+
       {numAchievements > 0 ? (
         <motion.div className={`${gridClasses} max-w-7xl mx-auto`}>
           {content.achievements.map((achievement, index) => (
-            <VarsityOrchestraCard
+            <AchievementCard
               key={achievement.id}
+              {...achievement} // Spread the achievement data
               index={index}
-              title={achievement.title}
-              imageSrc={achievement.imageSrc}
-              imageAlt={achievement.imageAlt}
+              isLoading={false} // Pass isLoading as false when data is loaded
             />
           ))}
         </motion.div>

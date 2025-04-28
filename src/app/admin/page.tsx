@@ -25,8 +25,8 @@ export default function AdminLogin() {
         redirect: false,
       });
 
-      if (result?.error) {
-        console.error("Login error:", result.error);
+      if (!result?.ok) {
+        console.error("Login error:", result?.error);
         setError("Invalid credentials. Please try again.");
       } else {
         // Get user data to check role

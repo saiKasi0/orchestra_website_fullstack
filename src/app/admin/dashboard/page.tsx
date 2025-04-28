@@ -5,7 +5,6 @@ import {
   Users, 
   FileEdit,
   LayoutDashboard,
-  Settings
 } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,7 +40,7 @@ export default function AdminDashboardPage() {
         </CardContent>
       </Card>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className={`grid grid-cols-1 ${isAdmin ? 'md:grid-cols-2' : ''} gap-6`}>
         {/* Users Card - Only visible to admins */}
         {isAdmin && (
           <Card className="border-l-4 border-l-indigo-600">
@@ -63,7 +62,7 @@ export default function AdminDashboardPage() {
           </Card>
         )}
         
-        {/* Content Card - Available to both roles */}
+        {/* Content Card - Available to Leadership & Admin */}
         <Card className="border-l-4 border-l-indigo-600">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-lg font-medium">Content</CardTitle>
@@ -81,27 +80,6 @@ export default function AdminDashboardPage() {
             </Button>
           </CardFooter>
         </Card>
-        
-        {/* Settings Card - Only for admins */}
-        {isAdmin && (
-          <Card className="border-l-4 border-l-indigo-600">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-lg font-medium">Settings</CardTitle>
-              <Settings className="h-5 w-5 text-indigo-600" />
-            </CardHeader>
-            <CardContent>
-              <CardDescription>Configure website settings and preferences</CardDescription>
-            </CardContent>
-            <CardFooter>
-              <Button className="w-full" asChild>
-                <Link href="/admin/settings" className="flex items-center justify-center">
-                  <Settings className="mr-2 h-4 w-4" />
-                  Site Settings
-                </Link>
-              </Button>
-            </CardFooter>
-          </Card>
-        )}
       </div>
     </AdminPageLayout>
   );

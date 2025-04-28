@@ -56,6 +56,8 @@ export default function Home() {
         const response = await fetch('/api/admin/content/homepage');
         
         if (!response.ok) {
+          console.log(response.text)
+
           throw new Error('Failed to fetch homepage content');
         }
         

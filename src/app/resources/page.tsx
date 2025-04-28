@@ -111,16 +111,22 @@ const Resources: React.FC = () => {
           <Card>
             <CardContent className="p-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Orchestra Calendar</h2>
-              <motion.iframe
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
-                title="Calendar"
-                src={content.calendar_url}
-                width="100%"
-                height="600"
-                className="border-0 rounded-lg"
-              />
+              {/* Conditionally render Calendar iframe */}
+              {content.calendar_url ? (
+                <motion.iframe
+                  key={content.calendar_url}
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.6, delay: 0.4 }}
+                  title="Calendar"
+                  src={content.calendar_url}
+                  width="100%"
+                  height="600"
+                  className="border-0 rounded-lg"
+                />
+              ) : (
+                <p className="text-muted-foreground">Calendar not available.</p>
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -139,22 +145,28 @@ const Resources: React.FC = () => {
                 transition={{ duration: 0.6, delay: 0.8 }}
                 className="mb-4 text-lg font-normal text-gray-600"
               >
-                {content.support_title}
+                {content.support_title || "Support Video"} {/* Provide fallback title */}
               </motion.p>
 
-              <motion.iframe
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.6, delay: 1 }}
-                title="Support Video"
-                width="100%"
-                height="400"
-                src={content.youtube_url}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerPolicy="strict-origin-when-cross-origin"
-                allowFullScreen
-                className="rounded-lg"
-              />
+              {/* Conditionally render YouTube iframe */}
+              {content.youtube_url ? (
+                <motion.iframe
+                  key={content.youtube_url}
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.6, delay: 1 }}
+                  title="Support Video"
+                  width="100%"
+                  height="400"
+                  src={content.youtube_url}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allowFullScreen
+                  className="rounded-lg"
+                />
+              ) : (
+                <p className="text-muted-foreground">Support video not available.</p>
+              )}
             </CardContent>
           </Card>
         </motion.section>

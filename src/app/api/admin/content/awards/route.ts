@@ -3,10 +3,12 @@ import { getServerSession } from "next-auth";
 import { createClient } from "@/utils/supabase/server";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import { awardsContentSchema } from "@/types/awards";
+import { Achievement } from "@/types/awards"; // Import Achievement type
 import { v4 as uuidv4 } from "uuid";
+import { uploadBase64Image, deleteStorageObject } from '@/utils/imageUtils'; // Import utilities
 
 // Helper function for generating formatted error responses
-function formatErrorResponse(message: string, details: any = null, status = 500) {
+function formatErrorResponse(message: string, details: unknown = null, status = 500) {
   const errorId = uuidv4().substring(0, 8);
   console.error(`[ERROR ${errorId}] ${message}`, details);
   
@@ -18,163 +20,12 @@ function formatErrorResponse(message: string, details: any = null, status = 500)
   }, { status });
 }
 
-// Helper function to process base64 images
-async function processBase64Image(base64String: string, requestId: string, supabase: any): Promise<string | null> {
-  try {
-    // Check if the string is a base64 image
-    if (!base64String.startsWith('data:image/')) {
-      return base64String; // Not a base64 image, return as is
-    }
-
-    console.log(`[${requestId}] Processing base64 image upload`);
-    
-    // Extract mime type and actual base64 data
-    const matches = base64String.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-    
-    if (!matches || matches.length !== 3) {
-      console.error(`[${requestId}] Invalid base64 string format`);
-      return null;
-    }
-    
-    const mimeType = matches[1];
-    const base64Data = matches[2];
-    const imageExtension = mimeType.split('/')[1];
-    
-    // Convert base64 to binary
-    const binaryData = Buffer.from(base64Data, 'base64');
-    
-    // Generate a unique filename
-    const filename = `achievement-${uuidv4()}.${imageExtension}`;
-    
-    // Define the path in the storage bucket
-    const filePath = `awards/${filename}`;
-    
-    // Upload to Supabase storage
-    console.log(`[${requestId}] Uploading image to storage bucket at path: ${filePath}`);
-    const { error: uploadError } = await supabase
-      .storage
-      .from('achievement-images')
-      .upload(filePath, binaryData, {
-        contentType: mimeType,
-        upsert: true
-      });
-    
-    if (uploadError) {
-      console.error(`[${requestId}] Error uploading image to storage:`, uploadError);
-      return null;
-    }
-    
-    // Get the public URL
-    const { data: urlData } = supabase
-      .storage
-      .from('achievement-images')
-      .getPublicUrl(filePath);
-    
-    console.log(`[${requestId}] Image uploaded successfully, URL: ${urlData.publicUrl}`);
-    return urlData.publicUrl;
-  } catch (error) {
-    console.error(`[${requestId}] Error processing base64 image:`, error);
-    return null;
-  }
-}
-
-// Helper function to delete an image from storage bucket
-async function deleteImageFromStorage(imageUrl: string, requestId: string, supabase: any): Promise<boolean> {
-  try {
-    // Check if it's a storage URL
-    if (!imageUrl.includes('storage')) {
-      console.log(`[${requestId}] Image URL is not from storage bucket, skipping deletion: ${imageUrl}`);
-      return true; // Not a storage URL, no need to delete
-    }
-    
-    // Try to extract the path from the URL using URL object for more reliable parsing
-    let storagePath = '';
-    try {
-      // Create URL object to parse the components
-      const url = new URL(imageUrl);
-      
-      // Get the pathname part of the URL
-      const pathname = url.pathname;
-      
-      // Log the pathname for debugging
-      console.log(`[${requestId}] Extracted pathname: ${pathname}`);
-      
-      // Check if pathname includes the bucket name and awards folder
-      if (pathname.includes('/achievement-images/')) {
-        // First try to extract the path after the bucket name
-        const pathMatch = pathname.match(/\/achievement-images\/(.*)/);
-        if (pathMatch && pathMatch[1]) {
-          storagePath = pathMatch[1];
-          console.log(`[${requestId}] Extracted storage path: ${storagePath}`);
-        }
-      }
-      
-      // If we couldn't extract a path, try another approach with split
-      if (!storagePath) {
-        const pathParts = pathname.split('/');
-        const bucketIndex = pathParts.findIndex(part => part === 'achievement-images');
-        
-        if (bucketIndex !== -1 && bucketIndex < pathParts.length - 1) {
-          // Join all parts after the bucket name
-          storagePath = pathParts.slice(bucketIndex + 1).join('/');
-          console.log(`[${requestId}] Extracted storage path using alternative method: ${storagePath}`);
-        }
-      }
-    } catch (parseError) {
-      console.error(`[${requestId}] Error parsing URL: ${parseError}`);
-      // Fall back to the original method if URL parsing fails
-      const urlParts = imageUrl.split('/achievement-images/');
-      if (urlParts.length === 2) {
-        storagePath = urlParts[1].split('?')[0]; // Remove any query parameters
-        console.log(`[${requestId}] Fallback extraction of storage path: ${storagePath}`);
-      }
-    }
-    
-    // Check if we have a valid storage path
-    if (!storagePath) {
-      console.error(`[${requestId}] Could not determine storage path from URL: ${imageUrl}`);
-      return false;
-    }
-    
-    // Make sure the path starts with 'awards/' if it doesn't already
-    if (!storagePath.startsWith('awards/')) {
-      storagePath = `awards/${storagePath}`;
-    }
-    
-    console.log(`[${requestId}] Deleting image from storage at path: ${storagePath}`);
-    
-    const { error } = await supabase
-      .storage
-      .from('achievement-images')
-      .remove([storagePath]);
-    
-    if (error) {
-      console.error(`[${requestId}] Error deleting image from storage:`, error);
-      return false;
-    }
-    
-    console.log(`[${requestId}] Successfully deleted image from storage: ${storagePath}`);
-    return true;
-  } catch (error) {
-    console.error(`[${requestId}] Unexpected error deleting image:`, error);
-    return false;
-  }
-}
-
 // GET endpoint for awards content
 export async function GET() {
   const requestId = uuidv4().substring(0, 8);
   console.log(`[${requestId}] Processing GET request for awards content`);
   
   try {
-    // Check authentication
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      console.warn(`[${requestId}] Unauthorized access attempt`);
-      return NextResponse.json({ error: "Unauthorized", requestId }, { status: 401 });
-    }
-    
-    console.log(`[${requestId}] Authenticated user: ${session.user.email}`);
     const supabase = createClient();
     
     // Query awards content
@@ -245,7 +96,6 @@ export async function GET() {
     }
     
     // Fetch achievements
-    console.log(`[${requestId}] Fetching achievements for content ID: ${awardsData.id}`);
     const { data: achievements, error: achievementsError } = await supabase
       .from('awards_achievements')
       .select('*')
@@ -266,11 +116,11 @@ export async function GET() {
     const content = {
       ...awardsData,
       achievements: (achievements || []).map(achievement => ({
-        id: achievement.id || `achievement-${Date.now()}-${Math.random()}`,
+        id: achievement.id,
         title: achievement.title || "",
         imageSrc: achievement.imagesrc || "", // Convert from db column name
         imageAlt: achievement.imagealt || "", // Convert from db column name
-        order_number: achievement.order_number || 0
+        order_number: achievement.order_number 
       }))
     };
     
@@ -346,14 +196,14 @@ export async function PUT(req: Request) {
     let imagesToDelete: string[] = [];
     
     if (content.id) {
-      const { data: existingAchievements, error: fetchError } = await supabase
+      const { data: fetchedAchievements, error: fetchError } = await supabase
         .from('awards_achievements')
-        .select('imagesrc')
+        .select('id, imagesrc') // Select ID and image source
         .eq('content_id', content.id);
         
-      if (!fetchError && existingAchievements) {
+      if (!fetchError && fetchedAchievements) {
         // Get all existing image URLs
-        const existingImageUrls = existingAchievements.map(a => a.imagesrc).filter(Boolean);
+        const existingImageUrls = fetchedAchievements.map(a => a.imagesrc).filter(Boolean);
         
         // Get all new image URLs that aren't base64 (these are existing URLs we're keeping)
         const keepingImageUrls = content.achievements
@@ -363,33 +213,43 @@ export async function PUT(req: Request) {
         // Images to delete are those in existingImageUrls but not in keepingImageUrls
         imagesToDelete = existingImageUrls.filter(url => !keepingImageUrls.includes(url));
         
-        console.log(`[${requestId}] Found ${imagesToDelete.length} images to delete from storage`);
+        console.log(`[${requestId}] Found ${imagesToDelete.length} images to potentially delete from storage`);
+      } else if (fetchError) {
+         console.error(`[${requestId}] Error fetching existing achievements for image deletion check:`, fetchError);
+         // Continue without deleting images if fetch fails, but log the error
       }
     }
     
     // Process any base64 images before saving
     console.log(`[${requestId}] Processing achievement images`);
-    for (let i = 0; i < content.achievements.length; i++) {
-      const achievement = content.achievements[i];
+    const processedAchievements = [...content.achievements]; // Create a mutable copy
+    for (let i = 0; i < processedAchievements.length; i++) {
+      const achievement = processedAchievements[i];
       
       // Check if imageSrc is a base64 string and process it
       if (achievement.imageSrc && achievement.imageSrc.startsWith('data:image/')) {
         console.log(`[${requestId}] Processing base64 image for achievement ${i+1}`);
-        const imageUrl = await processBase64Image(achievement.imageSrc, requestId, supabase);
+        // Use the utility function for upload
+        const imageUrl = await uploadBase64Image(
+          supabase,
+          'achievement-images', // Bucket name
+          achievement.imageSrc,
+          'awards/', // Path prefix
+          requestId
+        );
         
         if (imageUrl) {
-          content.achievements[i].imageSrc = imageUrl;
+          processedAchievements[i].imageSrc = imageUrl; // Update the copy
           console.log(`[${requestId}] Image for achievement ${i+1} processed successfully`);
         } else {
           console.error(`[${requestId}] Failed to process image for achievement ${i+1}`);
-          return formatErrorResponse("Failed to process one or more images", null, 500);
+          processedAchievements[i].imageSrc = ''; 
         }
       }
     }
     
     // Start transaction by updating or creating the main content record
     const contentId = content.id || uuidv4();
-    console.log(`[${requestId}] Working with content ID: ${contentId} (${content.id ? 'existing' : 'new'})`);
     
     // Update or insert the main content record
     console.log(`[${requestId}] Upserting main content record`);
@@ -413,7 +273,6 @@ export async function PUT(req: Request) {
     }
     
     // SIMPLIFIED APPROACH: Delete all existing achievements for this content
-    console.log(`[${requestId}] Deleting all existing achievements for content ID: ${contentId}`);
     const { error: deleteError } = await supabase
       .from('awards_achievements')
       .delete()
@@ -433,37 +292,43 @@ export async function PUT(req: Request) {
     if (imagesToDelete.length > 0) {
       console.log(`[${requestId}] Deleting ${imagesToDelete.length} unused images from storage`);
       for (const imageUrl of imagesToDelete) {
-        await deleteImageFromStorage(imageUrl, requestId, supabase);
+        // Use the imported utility function
+        await deleteStorageObject(supabase, 'achievement-images', imageUrl, requestId);
       }
     }
     
-    // If there are new achievements to add, insert them all at once
-    if (content.achievements && content.achievements.length > 0) {
-      // Prepare achievements with content_id and order_number
-      console.log(`[${requestId}] Preparing to insert ${content.achievements.length} achievements`);
-      const achievementsToInsert = content.achievements.map((achievement, index) => ({
-        id: achievement.id,
-        content_id: contentId,
-        title: achievement.title,
-        imagesrc: achievement.imageSrc, // Note: column name is lowercase in DB
-        imagealt: achievement.imageAlt, // Note: column name is lowercase in DB
-        order_number: index + 1 // Use the array index to set order
-      }));
+    // Prepare and insert the new set of achievements
+    let insertedAchievements: Achievement[] = []; // To store the result with new IDs
+    if (processedAchievements && processedAchievements.length > 0) {
+      console.log(`[${requestId}] Preparing to insert ${processedAchievements.length} achievements`);
       
-      // Log the first achievement as a sample for debugging
-      if (achievementsToInsert.length > 0) {
-        console.log(`[${requestId}] First achievement sample:`, {
-          ...achievementsToInsert[0],
-          title: achievementsToInsert[0].title.substring(0, 30) + (achievementsToInsert[0].title.length > 30 ? '...' : '')
-        });
-      }
+      // Prepare achievements for insertion, OMITTING ID
+      const achievementsToInsert = processedAchievements.map((achievement, index) => {
+        // Define the type for the object being inserted into the database
+        const insertData: {
+          content_id: string;
+          title: string;
+          imagesrc: string;
+          imagealt: string;
+          order_number: number;
+        } = {
+          content_id: contentId,
+          title: achievement.title,
+          imagesrc: achievement.imageSrc, 
+          imagealt: achievement.imageAlt,   
+          order_number: index + 1
+        };
+
+        return insertData; 
+      });
       
       // Insert all achievements at once
       console.log(`[${requestId}] Inserting ${achievementsToInsert.length} achievements`);
-      const { error: insertError } = await supabase
+      const { data: insertResult, error: insertError } = await supabase
         .from('awards_achievements')
-        .insert(achievementsToInsert);
-        
+        .insert(achievementsToInsert)
+        .select(); // Select the inserted rows to get new IDs
+
       if (insertError) {
         console.error(`[${requestId}] Error inserting achievements:`, {
           code: insertError.code,
@@ -474,6 +339,18 @@ export async function PUT(req: Request) {
         });
         return formatErrorResponse("Failed to insert achievements", insertError, 500);
       }
+      
+// Map the inserted data back to the Achievement type
+      if (insertResult) {
+        insertedAchievements = insertResult.map(dbAch => ({
+          id: dbAch.id, 
+          title: dbAch.title,
+          imageSrc: dbAch.imagesrc,
+          imageAlt: dbAch.imagealt,
+          order_number: dbAch.order_number
+        }));
+      }
+      
     } else {
       console.log(`[${requestId}] No achievements to insert`);
     }
@@ -483,6 +360,7 @@ export async function PUT(req: Request) {
       success: true, 
       message: "Awards content updated successfully",
       contentId,
+      updatedAchievements: insertedAchievements, // Return the achievements with new IDs
       requestId,
       timestamp: new Date().toISOString()
     });

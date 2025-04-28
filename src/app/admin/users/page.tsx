@@ -217,7 +217,7 @@ export default function UsersPage() {
   };
 
   return (
-    <AdminPageLayout allowedRoles={["admin", "super_admin"]} title="User Management">
+    <AdminPageLayout allowedRoles={["admin"]} title="User Management">
       <div className="space-y-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">

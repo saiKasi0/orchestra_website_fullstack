@@ -1,11 +1,11 @@
 import { z } from "zod";
 
 export const achievementSchema = z.object({
-  id: z.string(),
+  id: z.number().optional(),
   title: z.string().min(1, { message: "Title is required" }),
   imageSrc: z.string().min(1, { message: "Image is required" }),
   imageAlt: z.string().min(1, { message: "Alt text is required" }),
-  order_number: z.number().optional()
+  order_number: z.number()
 });
 
 export const awardsContentSchema = z.object({

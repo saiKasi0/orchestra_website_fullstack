@@ -4,34 +4,43 @@ import { resourcesContentSchema } from "@/types/resources";
 import { createClient } from "@/utils/supabase/server";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 
+const RESOURCE_ID = 1; // Define the constant ID
+
+// Default content structure
+const defaultContent = {
+  calendar_url: "https://calendar.google.com/calendar/embed?src=c_20p6293m4hda8ecdv1k63ki418%40group.calendar.google.com&amp",
+  support_title: "Just For Some Support :)",
+  youtube_url: "https://www.youtube.com/embed/QkklAQLhnQY?si=HGTk2aKkxV3r1ITb"
+};
+
 // GET endpoint for resources content
 export async function GET() {
   try {
     const supabase = createClient();
     
-    // Query resources content
+    // Query resources content specifically for id = 1
     const { data, error } = await supabase
       .from('resources_content')
       .select('*')
+      .eq('id', RESOURCE_ID) // Fetch only the record with id = 1
       .single();
       
     if (error) {
-      console.error("Error fetching resources content:", error);
+      console.error("Error fetching resources content (id=1):", error.message);
       
-      // If no record exists yet, return default values
+      // If no record exists (PGRST116), return default values
       if (error.code === 'PGRST116') {
+        console.log("No resources record found (id=1), returning defaults.");
         return NextResponse.json({ 
-          content: {
-            calendar_url: "https://calendar.google.com/calendar/embed?src=c_20p6293m4hda8ecdv1k63ki418%40group.calendar.google.com&amp",
-            support_title: "Just For Some Support :)",
-            youtube_url: "https://www.youtube.com/embed/QkklAQLhnQY?si=HGTk2aKkxV3r1ITb"
-          }
+          content: defaultContent 
         });
       }
       
+      // For other errors
       return NextResponse.json({ error: "Failed to fetch resources content" }, { status: 500 });
     }
     
+    // Return the found content (which should have id=1)
     return NextResponse.json({ content: data });
     
   } catch (error) {
@@ -49,14 +58,13 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Unauthorized - No session" }, { status: 401 });
     }
     
-    if (!["admin", "leadership"].includes(session.user?.role as string)) {
-      return NextResponse.json({ error: "Unauthorized - Insufficient permissions" }, { status: 403 });
+    const allowedRoles = ["admin", "content_editor", "super_admin"];
+    if (!session.user?.role || !allowedRoles.includes(session.user.role)) {
+        return NextResponse.json({ error: "Unauthorized - Insufficient permissions" }, { status: 403 });
     }
     
     // Parse and validate request body
     const body = await req.json();
-    
-    // Perform validation
     const result = resourcesContentSchema.safeParse(body);
     if (!result.success) {
       return NextResponse.json({ 
@@ -65,43 +73,49 @@ export async function PUT(req: Request) {
       }, { status: 400 });
     }
     
-    const content = result.data;
+    // Data to be saved (without the id)
+    const contentToSave = result.data;
     
     // Create Supabase client
     const supabase = createClient();
     
-    // Check if a record already exists
-    const { data: existingData, error: checkError } = await supabase
+    // 1. Attempt to UPDATE the record with id = 1
+    const { error: updateError, count: updateCount } = await supabase
       .from('resources_content')
-      .select('id')
-      .single();
-    
-    let updateError;
-    
-    if (checkError && checkError.code === 'PGRST116') {
-      // No record exists, insert a new one
+      .update(contentToSave)
+      .eq('id', RESOURCE_ID);
+
+    if (updateError) {
+      console.error("Error attempting to update resources content (id=1):", updateError);
+      // Don't immediately fail, maybe the record just doesn't exist yet.
+      // We'll check updateCount next. If it's a different error, the insert might also fail.
+    }
+
+    // 2. If update didn't affect any rows (likely because it doesn't exist), attempt to INSERT
+    if (updateCount === 0 && (!updateError || updateError.code === 'PGRST116' /* Should not happen with update, but check just in case */)) {
+      console.log(`No record found with id=${RESOURCE_ID} to update. Attempting insert.`);
+      
+      // Insert the content, letting the DB generate the ID.
+      // We assume the first insert will get ID=1 due to GENERATED ALWAYS sequence.
       const { error: insertError } = await supabase
         .from('resources_content')
-        .insert([content]);
-      
-      updateError = insertError;
+        .insert(contentToSave); // Do NOT specify ID here
+
+      if (insertError) {
+        console.error("Error inserting resources content after failed update:", insertError);
+        // If insert fails after update failed, return error
+        return NextResponse.json({ error: "Failed to save resources content (insert failed)" }, { status: 500 });
+      }
+      console.log("Successfully inserted new resources content record.");
+    } else if (updateError) {
+      // If there was an update error AND updateCount was not 0, it's a real update error
+       return NextResponse.json({ error: "Failed to update resources content" }, { status: 500 });
     } else {
-      // Record exists, update it
-      const { error: putError } = await supabase
-        .from('resources_content')
-        .update(content)
-        .eq('id', existingData.id);
-      
-      updateError = putError;
+       console.log(`Successfully updated resources content record (id=${RESOURCE_ID}).`);
     }
-    
-    if (updateError) {
-      console.error("Error updating resources content:", updateError);
-      return NextResponse.json({ error: "Failed to update resources content" }, { status: 500 });
-    }
-    
-    // Log the update for audit purposes
-    console.info(`Resources content updated by ${session.user.email}`);
+
+    // Log the action
+    console.info(`Resources content (id=${RESOURCE_ID}) saved by ${session.user.email}`);
     
     return NextResponse.json({
       message: "Resources content updated successfully"

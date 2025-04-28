@@ -15,7 +15,7 @@ import { AdminPageLayout } from "@/components/admin/AdminPageLayout";
 
 export default function ResourcesContentManagementPage() {
   return (
-    <AdminPageLayout allowedRoles={["admin", "content_editor", "super_admin"]} title="Resources Content Management">
+    <AdminPageLayout allowedRoles={["admin", "'leadership'"]} title="Resources Content Management">
       <div className="space-y-6">
         <ResourcesContentManagement />
       </div>
@@ -28,7 +28,7 @@ function ResourcesContentManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   
-  // State for resources content
+  // State for resources content - remove id
   const [content, setContent] = useState<ResourcesContent>({
     calendar_url: "",
     support_title: "",
@@ -49,7 +49,7 @@ function ResourcesContentManagement() {
         const data = await response.json();
         
         if (data.content) {
-          // Update the content state
+          // Update the content state - no id needed
           setContent({
             calendar_url: data.content.calendar_url || "",
             support_title: data.content.support_title || "Just For Some Support :)",
@@ -86,13 +86,13 @@ function ResourcesContentManagement() {
     setIsSaving(true);
     
     try {
-      // Send the data to the API
+      // Send the data (without id) to the API
       const response = await fetch('/api/admin/content/resources', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(content)
+        body: JSON.stringify(content) // Send state which doesn't have id
       });
       
       if (!response.ok) {
@@ -171,7 +171,7 @@ function ResourcesContentManagement() {
                     <Input
                       id="calendar_url"
                       name="calendar_url"
-                      value={content.calendar_url}
+                      value={content.calendar_url ?? ''} // Use ?? '' to handle null/undefined
                       onChange={handleContentChange}
                       className="flex-1"
                     />
@@ -179,8 +179,9 @@ function ResourcesContentManagement() {
                       type="button" 
                       variant="outline" 
                       size="icon"
-                      onClick={() => handleCopyToClipboard(content.calendar_url, "URL")}
+                      onClick={() => handleCopyToClipboard(content.calendar_url ?? '', "URL")} // Also handle null here
                       title="Copy URL"
+                      disabled={!content.calendar_url} // Disable if no URL
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
@@ -190,18 +191,7 @@ function ResourcesContentManagement() {
                   </p>
                 </div>
 
-                <div>
-                  <h3 className="mb-2 text-sm font-medium">Preview</h3>
-                  <div className="border rounded-lg p-2 bg-slate-50">
-                    <iframe
-                      title="Calendar Preview"
-                      src={content.calendar_url}
-                      width="100%"
-                      height="400"
-                      className="border-0 rounded-lg"
-                    />
-                  </div>
-                </div>
+             
               </div>
             </CardContent>
           </Card>
@@ -224,7 +214,7 @@ function ResourcesContentManagement() {
                   <Input
                     id="support_title"
                     name="support_title"
-                    value={content.support_title}
+                    value={content.support_title ?? ''} // Use ?? '' to handle null/undefined
                     onChange={handleContentChange}
                   />
                 </div>
@@ -237,7 +227,7 @@ function ResourcesContentManagement() {
                     <Input
                       id="youtube_url"
                       name="youtube_url"
-                      value={content.youtube_url}
+                      value={content.youtube_url ?? ''} // Use ?? '' to handle null/undefined
                       onChange={handleContentChange}
                       className="flex-1"
                     />
@@ -245,8 +235,9 @@ function ResourcesContentManagement() {
                       type="button" 
                       variant="outline" 
                       size="icon"
-                      onClick={() => handleCopyToClipboard(content.youtube_url, "URL")}
+                      onClick={() => handleCopyToClipboard(content.youtube_url ?? '', "URL")} // Also handle null here
                       title="Copy URL"
+                      disabled={!content.youtube_url} // Disable if no URL
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
@@ -257,20 +248,7 @@ function ResourcesContentManagement() {
                 </div>
 
                 <div>
-                  <h3 className="mb-2 text-sm font-medium">Preview</h3>
-                  <div className="border rounded-lg p-2 bg-slate-50">
-                    <p className="mb-2 text-gray-600">{content.support_title}</p>
-                    <iframe
-                      title="YouTube Preview"
-                      width="100%"
-                      height="300"
-                      src={content.youtube_url}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      referrerPolicy="strict-origin-when-cross-origin"
-                      allowFullScreen
-                      className="rounded-lg"
-                    />
-                  </div>
+
                 </div>
               </div>
             </CardContent>
