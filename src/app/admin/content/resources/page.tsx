@@ -243,7 +243,7 @@ function ResourcesContentManagement() {
                     </Button>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    The full YouTube video embed URL (https://www.youtube.com/embed/VIDEO_ID).
+                    The full YouTube video embed URL (https://www.youtube.com/embed/VIDEO_ID). Must copy from the embed link, availible by clickling share, then embed, and copying the link inside the code youtube generates.
                   </p>
                 </div>
 

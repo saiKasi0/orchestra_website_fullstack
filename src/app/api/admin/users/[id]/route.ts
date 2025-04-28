@@ -11,25 +11,31 @@ const updateUserSchema = z.object({
 });
 
 // Update a user (role only for security)
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) { // Use NextRequest
+// Update the function signature
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  // Await params and destructure id, renaming to userId
+  const { id: userId } = await params;
+
   // --- Rate Limiting Start ---
   if (apiRateLimiter) {
+      // Use userId
       const identifier = getIdentifier(req);
       if (identifier) {
           const { success } = await apiRateLimiter.limit(identifier);
           if (!success) {
-              console.warn(`Rate limit exceeded for PATCH /api/admin/users/${params.id} by IP: ${identifier}`);
+              console.warn(`Rate limit exceeded for PATCH /api/admin/users/${userId} by IP: ${identifier}`);
               return NextResponse.json({ error: "Too many requests" }, { status: 429 });
           }
       } else {
-          console.warn(`Could not determine identifier for rate limiting PATCH /api/admin/users/${params.id}`);
+          // Use userId
+          console.warn(`Could not determine identifier for rate limiting PATCH /api/admin/users/${userId}`);
       }
   }
   // --- Rate Limiting End ---
 
   try {
-    const userId = params.id;
-    
+    // userId is already defined above
+
     // Check authentication and authorization
     const session = await getServerSession(authOptions);
     if (!session) {
@@ -55,14 +61,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     
     // Create Supabase client
     const supabase = createClient();
-    
+
     // First, check if user exists
     const { data: existingUser, error: lookupError } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', userId)
+      .eq('id', userId) // Use userId
       .single();
-    
+
     if (lookupError || !existingUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -79,7 +85,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const { error: updateError } = await supabase
       .from('profiles')
       .update({ role })
-      .eq('id', userId);
+      .eq('id', userId); // Use userId
     
     if (updateError) {
       console.error("Error updating user:", updateError);
@@ -87,12 +93,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
     
     // Log update for audit purposes
-    console.info(`User (ID: ${userId}) role updated to ${role} by ${session.user.email}`);
-    
+    console.info(`User (ID: ${userId}) role updated to ${role} by ${session.user.email}`); // Use userId
+
     return NextResponse.json({
       message: "User updated successfully"
     });
-    
+
   } catch (error) {
     console.error("Unexpected error during user update:", error);
     return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
@@ -100,25 +106,28 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 // Delete a user
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) { // Use NextRequest
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  // Await params and destructure id, renaming to userId
+  const { id: userId } = await params;
+
   // --- Rate Limiting Start ---
   if (apiRateLimiter) {
+      // Use userId
       const identifier = getIdentifier(req);
       if (identifier) {
           const { success } = await apiRateLimiter.limit(identifier);
           if (!success) {
-              console.warn(`Rate limit exceeded for DELETE /api/admin/users/${params.id} by IP: ${identifier}`);
+              console.warn(`Rate limit exceeded for DELETE /api/admin/users/${userId} by IP: ${identifier}`);
               return NextResponse.json({ error: "Too many requests" }, { status: 429 });
           }
       } else {
-          console.warn(`Could not determine identifier for rate limiting DELETE /api/admin/users/${params.id}`);
+          // Use userId
+          console.warn(`Could not determine identifier for rate limiting DELETE /api/admin/users/${userId}`);
       }
   }
   // --- Rate Limiting End ---
 
   try {
-    const userId = params.id;
-    
     // Check authentication and authorization
     const session = await getServerSession(authOptions);
     if (!session) {
@@ -135,8 +144,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     // First, check if user exists and get auth_id
     const { data: existingUser, error: lookupError } = await supabase
       .from('profiles')
-      .select('*')
-      .eq('id', userId)
+      .select('*') // Select necessary fields including email and auth_id
+      .eq('id', userId) // Use userId
       .single();
     
     if (lookupError || !existingUser) {

@@ -92,7 +92,7 @@ export async function PUT(req: Request) {
     }
 
     // 2. If update didn't affect any rows (likely because it doesn't exist), attempt to INSERT
-    if (updateCount === 0 && (!updateError || updateError.code === 'PGRST116' /* Should not happen with update, but check just in case */)) {
+    if (updateCount === 0 && (!updateError)) {
       console.log(`No record found with id=${RESOURCE_ID} to update. Attempting insert.`);
       
       // Insert the content, letting the DB generate the ID.
