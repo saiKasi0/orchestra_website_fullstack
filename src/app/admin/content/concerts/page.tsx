@@ -226,7 +226,7 @@ export default function ConcertContentManagement() {
       const payload: ConcertsContent = {
         // Convert to number if it's a string ID, or omit for new entries
         id: contentId ? Number(contentId) : undefined,
-        concert_name: concertName || "Untitled Concert",
+        concert_name: concertName || "",
         poster_image_url: posterImageUrl,
         no_concert_text: noConcertText,
         orchestras: validOrchestras
